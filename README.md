@@ -181,7 +181,7 @@ Native Android, Windows, and iOS builds were not repeated during that cleanup. E
 
 ### App icon
 
-The supplied wallet/gamepad artwork is preserved at `assets/branding/app-icon.png`. Android, iOS, web, and Windows icons are generated from that image. Web maskable icons include safe padding; iOS icons are opaque, and the Windows ICO includes seven sizes.
+The supplied wallet/gamepad artwork is preserved at `assets/branding/app-icon.png`. Android, iOS, web, and Windows icons are generated from that image. Android 8+ uses adaptive foreground/background layers with regular and round launcher entries, avoiding the legacy white icon wrapper on launchers such as Nothing Launcher. Older Android versions retain bitmap fallbacks. Web maskable icons include safe padding; iOS icons are opaque, and the Windows ICO includes seven sizes.
 
 To regenerate on Windows:
 

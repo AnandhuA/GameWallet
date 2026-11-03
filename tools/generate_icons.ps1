@@ -35,6 +35,30 @@ function Save-AppIcon([string]$RelativePath, [int]$Size, [double]$Padding = 0) {
     }
 }
 
+# Android launchers mask the central 72dp of a 108dp adaptive layer.
+# Keep the artwork inside the safe area; the dark background fills the mask.
+function Save-AndroidForeground([string]$RelativePath, [int]$Size) {
+    $bitmap = [System.Drawing.Bitmap]::new($Size, $Size, [System.Drawing.Imaging.PixelFormat]::Format32bppArgb)
+    $graphics = [System.Drawing.Graphics]::FromImage($bitmap)
+    $attributes = [System.Drawing.Imaging.ImageAttributes]::new()
+    try {
+        $graphics.Clear([System.Drawing.Color]::Transparent)
+        $graphics.InterpolationMode = [System.Drawing.Drawing2D.InterpolationMode]::HighQualityBicubic
+        $graphics.PixelOffsetMode = [System.Drawing.Drawing2D.PixelOffsetMode]::HighQuality
+        $attributes.SetWrapMode([System.Drawing.Drawing2D.WrapMode]::TileFlipXY)
+        $edge = [int][Math]::Round($Size * .1)
+        $rectangle = [System.Drawing.Rectangle]::new($edge, $edge, $Size - 2 * $edge, $Size - 2 * $edge)
+        $graphics.DrawImage($sourceImage, $rectangle, 0, 0, $sourceImage.Width, $sourceImage.Height, [System.Drawing.GraphicsUnit]::Pixel, $attributes)
+        $target = Join-Path $repoRoot $RelativePath
+        [System.IO.Directory]::CreateDirectory([System.IO.Path]::GetDirectoryName($target)) | Out-Null
+        $bitmap.Save($target, [System.Drawing.Imaging.ImageFormat]::Png)
+    } finally {
+        $attributes.Dispose()
+        $graphics.Dispose()
+        $bitmap.Dispose()
+    }
+}
+
 try {
     Save-AppIcon 'web/favicon.png' 64
     foreach ($size in @(192, 512)) {
@@ -44,7 +68,27 @@ try {
     $densities = @{mdpi = 48; hdpi = 72; xhdpi = 96; xxhdpi = 144; xxxhdpi = 192}
     foreach ($density in $densities.Keys) {
         Save-AppIcon "android/app/src/main/res/mipmap-$density/ic_launcher.png" $densities[$density]
+        Save-AppIcon "android/app/src/main/res/mipmap-$density/ic_launcher_round.png" $densities[$density]
+        $layerSize = [int][Math]::Round($densities[$density] * 108 / 48)
+        Save-AndroidForeground "android/app/src/main/res/drawable-$density/ic_launcher_foreground.png" $layerSize
     }
+    $adaptiveFolder = Join-Path $repoRoot 'android/app/src/main/res/mipmap-anydpi-v26'
+    [System.IO.Directory]::CreateDirectory($adaptiveFolder) | Out-Null
+    $adaptive = '<?xml version="1.0" encoding="utf-8"?>
+<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
+    <background android:drawable="@color/ic_launcher_background" />
+    <foreground android:drawable="@drawable/ic_launcher_foreground" />
+</adaptive-icon>
+'
+    foreach ($name in @('ic_launcher', 'ic_launcher_round')) {
+        [System.IO.File]::WriteAllText((Join-Path $adaptiveFolder "$name.xml"), $adaptive)
+    }
+    $background = '<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="ic_launcher_background">#040D12</color>
+</resources>
+'
+    [System.IO.File]::WriteAllText((Join-Path $repoRoot 'android/app/src/main/res/values/icon_colors.xml'), $background)
     $catalog = Get-Content (Join-Path $repoRoot 'ios/Runner/Assets.xcassets/AppIcon.appiconset/Contents.json') -Raw | ConvertFrom-Json
     foreach ($image in $catalog.images) {
         $size = [int]([double]($image.size.Split('x')[0]) * [double]($image.scale.Replace('x', '')))

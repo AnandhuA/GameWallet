@@ -47,3 +47,10 @@ The release web build passed for the icon update; generated web icon and favicon
 - Guarded fullscreen callbacks from retired page controllers; fixed duplicate description/gallery keys uncovered by the full regression suite.
 - Dart formatting and Flutter analysis passed. All 68 tests passed; focused image coverage includes 12 tests for ordered fallback, corruption, all-failed/missing sources, rebuilds, stale responses, disposal, game changes, gallery reopening and fullscreen recovery. Cache tests cover invalidation, valid replacements, offline stale data and personal-data preservation.
 - These failure scenarios use controlled fixtures. No live RAWG/CDN outage or browser CORS failure was induced, and no APK/native build was generated for this update.
+
+
+## Android adaptive icon
+
+Added Android 8+ adaptive icon definitions for both regular and round launcher entries, a dark full-bleed background, and foreground artwork at all five density sizes (108–432px for 108dp layers). The supplied image is inset within the foreground safe area so the launcher mask fills with artwork/background rather than wrapping a small legacy square in white. Older devices retain bitmap resources. The manifest declares both icon variants, and the icon generator reproduces all resources. Parsed XML/PNG resources and rendered a circular-mask preview at `docs/previews/android-adaptive-circle.png`. Nothing Phone 1 hardware was not directly tested; an updated native build is needed, not hot reload. Android resource compilation was run without requesting an APK assembly task; its result is recorded below.
+
+Android validation passed: `gradlew.bat :app:processDebugResources --offline` completed successfully (57 tasks). No APK assembly or device installation was performed.
