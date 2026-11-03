@@ -10,6 +10,8 @@ import 'package:game_atlas/core/api_service.dart';
 import 'package:game_atlas/core/game_repository.dart';
 import 'package:game_atlas/core/models.dart';
 import 'package:game_atlas/core/storage.dart';
+import 'package:game_atlas/features/pricing/pricing_repository.dart';
+import 'package:game_atlas/features/pricing/pricing_service.dart';
 import 'package:game_atlas/features/explore/search_provider.dart';
 import 'package:game_atlas/features/library/library_provider.dart';
 import 'package:game_atlas/main.dart';
@@ -454,6 +456,9 @@ void main() {
         MultiProvider(
           providers: [
             Provider<GameRepository>.value(value: FailingRepository(storage)),
+            Provider(
+              create: (_) => PricingRepository(storage, PricingService()),
+            ),
             ChangeNotifierProvider(create: (_) => LibraryProvider(storage)),
             ChangeNotifierProvider(
               create: (_) => JournalProvider(CompanionRepository(storage)),

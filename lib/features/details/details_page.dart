@@ -13,6 +13,7 @@ import 'game_details_provider.dart';
 import '../pick/pick_page.dart';
 import 'game_description.dart';
 import 'game_image_gallery.dart';
+import '../pricing/store_prices_section.dart';
 
 class DetailsPage extends StatelessWidget {
   final Game initial;
@@ -479,6 +480,7 @@ class _DetailsBody extends StatelessWidget {
                           ],
                         ),
                       ],
+                      StorePricesSection(game: g),
                       heading('Description'),
                       GameDescription(
                         key: ValueKey('description:${g.key}'),

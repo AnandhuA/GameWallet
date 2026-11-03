@@ -12,6 +12,8 @@ import 'features/home/home_provider.dart';
 import 'features/library/library_provider.dart';
 import 'features/settings/settings_provider.dart';
 import 'shared/app_shell.dart';
+import 'features/pricing/pricing_service.dart';
+import 'features/pricing/pricing_repository.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -43,6 +45,14 @@ class GameAtlas extends StatelessWidget {
   @override
   Widget build(BuildContext context) => MultiProvider(
     providers: [
+      Provider(
+        create: (_) => PricingService(),
+        dispose: (_, service) => service.dispose(),
+      ),
+      Provider(
+        create: (context) =>
+            PricingRepository(storage, context.read<PricingService>()),
+      ),
       ChangeNotifierProvider(create: (_) => ImageCacheService(storage.images)),
       Provider(create: (_) => CompanionRepository(storage)),
       ChangeNotifierProvider(

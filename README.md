@@ -25,6 +25,7 @@ Built with **Flutter, Dart, Provider, Hive Community Edition, and Dio**. Live di
 - Browse featured, popular, top-rated, recently released, and upcoming games.
 - Search with debounce, Best match ordering, platform/genre/year filters, and paginated results.
 - View descriptions, ratings, release dates, genres, platforms, developers, publishers, screenshots, and official websites when available.
+- Compare supported PC store offers in **Stores & prices** on game details, with estimated rupee amounts, original USD offers, discounts, and external purchase links.
 - Personalize discovery through a skippable first-launch questionnaire. Selected platforms filter discovery; favorite genres rank recommendations.
 - Edit your gaming preferences from **Profile or Settings**.
 - Playing, previously completed, and hidden games stay out of Home and Explore. Your saved personal collection remains accessible.
@@ -91,9 +92,23 @@ Your library, favorites, preferences, journals, LineUps, plans, and playthrough 
 | Cache | Default limits | Behavior |
 | --- | --- | --- |
 | Game metadata | 24-hour expiry; 200 entries | Expired results can be shown as a labeled fallback when requests fail. |
+| Store prices | 1-hour freshness; shares the 200-entry data cache | Explicit refresh bypasses fresh results; failed requests can show labeled outdated offers without a current-lowest claim. |
+| USD → INR reference rate | 24-hour freshness; shares the data cache | Converts USD offers into labeled rupee estimates. Cached rates remain available offline with an outdated-rate label; unavailable conversion leaves original USD prices visible. |
 | Artwork | 100 MiB; 500 images; 30-day freshness | Viewed images are cached; Saved/Playing artwork is queued automatically. Older images are evicted when limits are reached. |
 
 Settings offers separate **Clear game data**, **Clear images**, and **Clear all cache** actions. These preserve personal records and API configuration. Clearing application/browser storage removes local data.
+
+### Stores & prices
+
+Open a real game's details and expand **Stores & prices**. The app calls [CheapShark](https://apidocs.cheapshark.com/) directly; no additional key, login, or backend is needed. Pricing requests start only when the section is opened. Demo games do not show real offers.
+
+Offers are for **PC**, with **estimated prices in ₹** converted from the provider's USD offers using a [Frankfurter](https://frankfurter.dev/) reference exchange rate. No extra key or backend is required for conversion. Original USD amounts remain visible, along with the exchange-rate date and attribution. These estimates are **not Indian store quotes** and exclude checkout-specific fees and taxes. If no usable rate is available, prices remain in USD with an explanation. The lowest badge means **lowest among listed stores for the selected listing**, not every store in existence. The store directory is loaded dynamically, so Steam, Epic, and other stores appear only when an active store has a reported offer. Missing offers do not prove a game is unavailable elsewhere. Final checkout price and regional availability can differ.
+
+An unambiguous matching title/edition is selected automatically. Otherwise, choose the correct listing before viewing its prices; editions, DLC, and bundles are not merged. Use **Change listing** to correct a selection. Confirmed matches live in the disposable cache under the original source-aware game identity; they never replace RAWG metadata or library snapshots.
+
+Offers show their last-check time. Refresh checks the provider again, subject to rate limits; offline fallback is marked **Outdated prices** and loses its lowest-price badge. **Clear game data** also clears store prices and cached listing matches without deleting personal data. The app coalesces overlapping requests, cancels abandoned requests, and honors `Retry-After` responses.
+
+Purchase actions use CheapShark's required redirect links, including its tracking parameters. Attribution links back to CheapShark. There are no deals feeds, giveaway feeds, background price polling, notifications, or verified Indian store-price comparisons in this release. Browser access depends on the providers' CORS support; native checkout/device installation are separate from API tests.
 
 To change metadata cache expiry:
 
@@ -117,7 +132,7 @@ Playthrough durations count **calendar dates inclusively**, not hours played: st
 lib/
   core/        Models, API access, repositories, Hive storage, and caches
   features/    Discovery, details, library, journal, LineUp, calendar, pick,
-               profile, and settings screens with focused providers
+               profile, settings, and pricing with focused providers
   shared/      Responsive navigation, cards, cached images, and UI components
 test/          Persistence, provider, cache, API, and widget tests
 assets/art/    Fictional demo artwork and generated icon preview
@@ -127,6 +142,8 @@ docs/          Historical verification notes and preview screenshots
 ```
 
 Widgets delegate network and storage work to providers and repositories. Search cancels obsolete requests and rejects stale responses; game details use separate state per route. Personal Hive records are kept separate from disposable API and image caches.
+
+`features/pricing/` contains the typed match/offer models, CheapShark Dio service, bounded-cache repository, route-scoped provider, and expandable details section. Price requests never use or transmit the RAWG key.
 
 The display name is **Game Wallet**. The existing Dart package name (`game_atlas`) and platform application IDs are retained for compatibility with existing installations and saved data.
 
@@ -141,6 +158,14 @@ dart format --output=none --set-exit-if-changed lib test
 flutter analyze
 flutter test
 ```
+
+Pricing fixtures run with the normal suite. To explicitly check the public live service (requires internet):
+
+```sh
+flutter test test/pricing_test.dart --dart-define=PRICING_LIVE=true --plain-name="live CheapShark smoke check"
+```
+
+The live check resolves Portal 2 and loads offers plus a USD-to-INR reference rate through the actual Dart service/repository. It is skipped by default so routine tests remain independent of external services. Purchase redirects are not fetched automatically.
 
 Build the target you need:
 
