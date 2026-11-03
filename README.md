@@ -1,5 +1,7 @@
 # Game Wallet
 
+<img src="assets/art/icon.png" width="112" alt="Game Wallet app icon">
+
 **Discover your next game. Keep track of every adventure.**
 
 Game Wallet is a Flutter game discovery and personal library app for PC, console, Android, and iOS games. Find something new, organize your backlog, track playthroughs, and keep your gaming memories in one place.
@@ -101,6 +103,12 @@ flutter run --dart-define=CACHE_HOURS=12
 
 Web artwork caching depends on CDN cross-origin permissions and browser storage limits. Online images may still render when byte caching is unavailable; offline artwork is not guaranteed.
 
+### Automatic image fallback
+
+Covers try the game's cover, artwork, then screenshots in API order. Wide banners try artwork, cover, then screenshots. Blank/duplicate sources are ignored, and the first working image stays selected during normal rebuilds. Discovery cards, Playing cards, and wheel artwork use the same loader; images are never borrowed from another game.
+
+Broken gallery thumbnails are removed. Fullscreen viewing advances to a surviving image and updates its counter; if all images fail, it shows **No images available**. Reopening the page retries failed sources. Usable stale cached images remain available during network failures; only confirmed corrupt cached bytes are removed, without deleting a newer replacement or personal data. Web rendering retains its HTML-image fallback when cross-origin byte requests are blocked.
+
 Playthrough durations count **calendar dates inclusively**, not hours played: starting today is Day 1, and finishing tomorrow is 2 days. Unknown legacy dates stay unknown rather than being inferred.
 
 ## Project structure
@@ -112,7 +120,8 @@ lib/
                profile, and settings screens with focused providers
   shared/      Responsive navigation, cards, cached images, and UI components
 test/          Persistence, provider, cache, API, and widget tests
-assets/art/    Fictional demo artwork and icon source
+assets/art/    Fictional demo artwork and generated icon preview
+assets/branding/ Original supplied Game Wallet icon
 tools/         Demo-art and platform-icon generators
 docs/          Historical verification notes and preview screenshots
 ```
@@ -151,7 +160,7 @@ Android/iOS distribution requires your application IDs and release signing. Wind
 
 ### Verification
 
-The latest cleanup passed **55 tests**, Flutter static analysis, and a web release build. The web build emits a documented Flutter Cupertino font-family warning; see [verification notes](VERIFICATION.md).
+The latest image-fallback update passed **68 tests** and Flutter static analysis. The earlier cleanup and icon updates also passed web release builds. The web build emits a documented Flutter Cupertino font-family warning; see [verification notes](VERIFICATION.md).
 
 Native Android, Windows, and iOS builds were not repeated during that cleanup. Earlier live-service and device checks are separated from fixture-based tests in the [verification history](docs/verification-history.md).
 
@@ -168,3 +177,16 @@ Native Android, Windows, and iOS builds were not repeated during that cleanup. E
 - Game catalog and live artwork: [RAWG](https://rawg.io/).
 - Visual and interaction inspiration: [Cinemava](https://github.com/AnandhuA/Cinemava).
 - Historical UI captures: [preview archive](docs/previews/). These may show earlier designs and are not bundled app assets.
+
+
+### App icon
+
+The supplied wallet/gamepad artwork is preserved at `assets/branding/app-icon.png`. Android, iOS, web, and Windows icons are generated from that image. Web maskable icons include safe padding; iOS icons are opaque, and the Windows ICO includes seven sizes.
+
+To regenerate on Windows:
+
+```powershell
+pwsh -File tools/generate_icons.ps1
+```
+
+Rebuild the app to update the installed launcher icon; hot reload does not replace native icons. Browsers and launchers may keep a cached icon until refreshed.

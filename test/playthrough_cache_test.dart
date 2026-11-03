@@ -356,6 +356,47 @@ void main() {
     },
   );
   test(
+    'Corrupt cache removal preserves valid replacements and personal data',
+    () async {
+      const url = 'https://media.test/recovery.png';
+      final bad = Uint8List.fromList([1, 2, 3]);
+      final good = await File('assets/art/1.png').readAsBytes();
+      final adapter = MediaAdapter(good)..fail = true;
+      final dio = Dio()..httpClientAdapter = adapter;
+      final cache = ImageCacheService(
+        storage.images,
+        dio: dio,
+        expiry: Duration.zero,
+      );
+      await storage.library.put(
+        game.key,
+        LibraryEntry(game: game, notes: 'Keep personal data'),
+      );
+      Map<String, dynamic> record(Uint8List data) => {
+        'bytes': data,
+        'time': 0,
+        'access': 0,
+      };
+      await storage.images!.put(url, record(bad));
+      await storage.images!.put('@access:$url', 1);
+      expect(await cache.discardCorrupt(url, bad), true);
+      expect(cache.peek(url), null);
+      expect(storage.images!.containsKey('@access:$url'), false);
+      await storage.images!.put(url, record(good));
+      expect(await cache.discardCorrupt(url, good), false);
+      expect(await cache.discardCorrupt(url, bad), false);
+      expect(await cache.load(url), good);
+      expect(cache.peek(url), good);
+      expect(storage.library.get(game.key)!.notes, 'Keep personal data');
+      final invalidation = cache.discardCorrupt(url, bad);
+      await storage.images!.put(url, record(good));
+      expect(await invalidation, false);
+      cache.dispose();
+      expect(await cache.discardCorrupt(url, bad), false);
+    },
+  );
+
+  test(
     'Image byte budget evicts artwork while clearing preserves run dates',
     () async {
       final png = await File('assets/art/1.png').readAsBytes();

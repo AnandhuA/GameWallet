@@ -12,6 +12,7 @@ import '../calendar/calendar_page.dart';
 import 'game_details_provider.dart';
 import '../pick/pick_page.dart';
 import 'game_description.dart';
+import 'game_image_gallery.dart';
 
 class DetailsPage extends StatelessWidget {
   final Game initial;
@@ -479,42 +480,15 @@ class _DetailsBody extends StatelessWidget {
                         ),
                       ],
                       heading('Description'),
-                      GameDescription(key: ValueKey(g.key), text: g.summary),
-                      if (images.isNotEmpty) ...[
-                        heading('Game images'),
-                        SizedBox(
-                          height: 180,
-                          child: ListView.separated(
-                            scrollDirection: Axis.horizontal,
-                            itemCount: images.length,
-                            separatorBuilder: (_, i) =>
-                                const SizedBox(width: 12),
-                            itemBuilder: (_, i) => SizedBox(
-                              width: 250,
-                              child: ClipRRect(
-                                borderRadius: BorderRadius.circular(14),
-                                child: Material(
-                                  child: InkWell(
-                                    onTap: () => Navigator.push(
-                                      context,
-                                      MaterialPageRoute<void>(
-                                        builder: (_) => ScreenshotViewer(
-                                          images: images,
-                                          index: i,
-                                        ),
-                                      ),
-                                    ),
-                                    child: CatalogImage(
-                                      images[i],
-                                      fit: BoxFit.cover,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
+                      GameDescription(
+                        key: ValueKey('description:${g.key}'),
+                        text: g.summary,
+                      ),
+                      heading('Game images'),
+                      GameImageGallery(
+                        key: ValueKey('gallery:${g.key}'),
+                        sources: images,
+                      ),
                       if (g.developers.isNotEmpty ||
                           g.publishers.isNotEmpty) ...[
                         heading('Developers & publishers'),
@@ -645,70 +619,4 @@ class _DetailsBody extends StatelessWidget {
       ),
     );
   }
-}
-
-class ScreenshotViewer extends StatefulWidget {
-  final List<String> images;
-  final int index;
-  const ScreenshotViewer({
-    super.key,
-    required this.images,
-    required this.index,
-  });
-  @override
-  State<ScreenshotViewer> createState() => _ScreenshotViewerState();
-}
-
-class _ScreenshotViewerState extends State<ScreenshotViewer> {
-  late final controller = PageController(initialPage: widget.index);
-  late int current = widget.index;
-  @override
-  void dispose() {
-    controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(title: const Text('Game images')),
-    body: Column(
-      children: [
-        Expanded(
-          child: PageView.builder(
-            controller: controller,
-            itemCount: widget.images.length,
-            onPageChanged: (v) => setState(() => current = v),
-            itemBuilder: (_, i) =>
-                InteractiveViewer(child: CatalogImage(widget.images[i])),
-          ),
-        ),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            IconButton(
-              tooltip: 'Previous screenshot',
-              onPressed: current == 0
-                  ? null
-                  : () => controller.previousPage(
-                      duration: const Duration(milliseconds: 180),
-                      curve: Curves.easeOut,
-                    ),
-              icon: const Icon(Icons.chevron_left),
-            ),
-            Text('${current + 1} / ${widget.images.length}'),
-            IconButton(
-              tooltip: 'Next screenshot',
-              onPressed: current == widget.images.length - 1
-                  ? null
-                  : () => controller.nextPage(
-                      duration: const Duration(milliseconds: 180),
-                      curve: Curves.easeOut,
-                    ),
-              icon: const Icon(Icons.chevron_right),
-            ),
-          ],
-        ),
-      ],
-    ),
-  );
 }

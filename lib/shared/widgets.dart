@@ -51,7 +51,13 @@ class CatalogSourceLabel extends StatelessWidget {
 class CatalogImage extends StatelessWidget {
   final String source;
   final BoxFit fit;
-  const CatalogImage(this.source, {super.key, this.fit = BoxFit.contain});
+  final ValueChanged<String>? onUnavailable;
+  const CatalogImage(
+    this.source, {
+    super.key,
+    this.fit = BoxFit.contain,
+    this.onUnavailable,
+  });
   @override
   Widget build(BuildContext context) {
     Widget error(BuildContext context, Object error, StackTrace? trace) =>
@@ -61,13 +67,12 @@ class CatalogImage extends StatelessWidget {
             semanticLabel: 'Image unavailable',
           ),
         );
-    return source.startsWith('assets/art/')
-        ? Image.asset(source, fit: fit, errorBuilder: error)
-        : CachedCatalogImage(
-            source,
-            fit: fit,
-            placeholder: error(context, StateError('Image unavailable'), null),
-          );
+    return CachedCatalogImage(
+      source,
+      fit: fit,
+      placeholder: error(context, StateError('Image unavailable'), null),
+      onUnavailable: onUnavailable,
+    );
   }
 }
 
@@ -81,7 +86,16 @@ class GameArt extends StatelessWidget {
   const GameArt(this.game, {super.key, this.wide = false});
   @override
   Widget build(BuildContext context) {
-    final url = wide ? game.artwork ?? game.cover : game.cover;
+    final sources = catalogImageSources([
+      if (wide) ...[
+        game.artwork,
+        game.cover,
+      ] else ...[
+        game.cover,
+        game.artwork,
+      ],
+      ...game.screenshots,
+    ]);
     final placeholder = DecoratedBox(
       decoration: BoxDecoration(
         gradient: LinearGradient(
@@ -112,7 +126,7 @@ class GameArt extends StatelessWidget {
         ),
       ),
     );
-    if (url == null) {
+    if (sources.isEmpty) {
       if (game.demo) {
         return Image.asset(
           'assets/art/${game.id}.png',
@@ -122,7 +136,13 @@ class GameArt extends StatelessWidget {
       }
       return placeholder;
     }
-    return CachedCatalogImage(url, fit: BoxFit.cover, placeholder: placeholder);
+    return CachedCatalogImage(
+      sources.first,
+      key: ValueKey('${game.key}:$wide'),
+      fallbackSources: sources.skip(1).toList(),
+      fit: BoxFit.cover,
+      placeholder: placeholder,
+    );
   }
 }
 

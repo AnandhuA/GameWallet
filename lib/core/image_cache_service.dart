@@ -80,6 +80,34 @@ class ImageCacheService extends ChangeNotifier {
         clock().difference(DateTime.fromMillisecondsSinceEpoch(time)) < expiry;
   }
 
+  Future<void> _verifyImage(Uint8List data) async {
+    final codec = await ui.instantiateImageCodec(
+      data,
+      targetWidth: 1,
+      targetHeight: 1,
+    );
+    try {
+      final frame = await codec.getNextFrame();
+      frame.image.dispose();
+    } finally {
+      codec.dispose();
+    }
+  }
+
+  /// Remove only confirmed corrupt bytes, never a newer successful download.
+  Future<bool> discardCorrupt(String url, Uint8List rejectedBytes) async {
+    if (_disposed) return false;
+    try {
+      await _verifyImage(rejectedBytes);
+      return false;
+    } catch (_) {
+      if (_disposed || !listEquals(peek(url), rejectedBytes)) return false;
+      await _delete(url);
+      if (!_disposed) notifyListeners();
+      return true;
+    }
+  }
+
   Future<void> _acquire() async {
     if (_active < 3) {
       _active++;
@@ -147,12 +175,7 @@ class ImageCacheService extends ChangeNotifier {
         },
       );
       final data = Uint8List.fromList(response.data ?? []);
-      final codec = await ui.instantiateImageCodec(
-        data,
-        targetWidth: 1,
-        targetHeight: 1,
-      );
-      codec.dispose();
+      await _verifyImage(data);
       if (_disposed || generation != _generation) {
         throw StateError('Image request cancelled');
       }
