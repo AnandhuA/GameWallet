@@ -1,3 +1,4 @@
+import '../../core/catalog_identity.dart';
 import 'dart:math';
 import 'package:flutter/foundation.dart';
 import '../../core/companion_models.dart';
@@ -8,7 +9,16 @@ import '../library/library_provider.dart';
 
 class JournalProvider extends ChangeNotifier {
   final CompanionRepository repository;
-  JournalProvider(this.repository);
+  final CatalogIdentity? identities;
+  JournalProvider(this.repository, {this.identities}) {
+    identities?.addListener(notifyListeners);
+  }
+  @override
+  void dispose() {
+    identities?.removeListener(notifyListeners);
+    super.dispose();
+  }
+
   List<PlaythroughEntry> entries(bool demo, {String? gameKey}) =>
       repository
           .records('journal')
@@ -16,7 +26,10 @@ class JournalProvider extends ChangeNotifier {
           .where(
             (e) =>
                 e.game.demo == demo &&
-                (gameKey == null || e.game.key == gameKey),
+                (gameKey == null ||
+                    (identities?.keys(gameKey) ?? {gameKey}).contains(
+                      e.game.key,
+                    )),
           )
           .toList()
         ..sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
@@ -198,8 +211,19 @@ class CalendarProvider extends ChangeNotifier {
 
 class DiscoveryPreferencesProvider extends ChangeNotifier {
   final CompanionRepository repository;
-  DiscoveryPreferencesProvider(this.repository);
-  bool hidden(Game game) => repository.box.get('hidden:${game.key}') != null;
+  final CatalogIdentity? identities;
+  DiscoveryPreferencesProvider(this.repository, {this.identities}) {
+    identities?.addListener(notifyListeners);
+  }
+  @override
+  void dispose() {
+    identities?.removeListener(notifyListeners);
+    super.dispose();
+  }
+
+  bool hidden(Game game) => (identities?.keys(game.key) ?? {game.key}).any(
+    (key) => repository.box.get('hidden:$key') != null,
+  );
   List<Game> hiddenGames(bool demo) => repository
       .records('hidden')
       .map(Game.fromJson)
@@ -280,21 +304,23 @@ List<Game> smartCandidates(
     'Story': ['Adventure', 'RPG', 'Role-playing'],
     'Strategic': ['Strategy', 'Board Games', 'Card'],
   };
-  final candidates = {for (final g in source) g.key: g}.values
-      .where(
-        (g) =>
-            !hidden.hidden(g) &&
-            (platform == null || g.platforms.contains(platform)) &&
-            (genre == null || g.genres.contains(genre)) &&
-            (mood == 'Any' ||
-                g.genres.any((v) => (moods[mood] ?? []).contains(v))) &&
-            (!unfinished ||
-                ![
-                  LibraryStatus.completed,
-                  LibraryStatus.dropped,
-                ].contains(library.entry(g)?.status)),
-      )
-      .toList();
+  final candidates =
+      {for (final g in source) library.identities?.canonical(g.key) ?? g.key: g}
+          .values
+          .where(
+            (g) =>
+                !hidden.hidden(g) &&
+                (platform == null || g.platforms.contains(platform)) &&
+                (genre == null || g.genres.contains(genre)) &&
+                (mood == 'Any' ||
+                    g.genres.any((v) => (moods[mood] ?? []).contains(v))) &&
+                (!unfinished ||
+                    ![
+                      LibraryStatus.completed,
+                      LibraryStatus.dropped,
+                    ].contains(library.entry(g)?.status)),
+          )
+          .toList();
   int score(Game g) => g.genres.where(preferredGenres.contains).length;
   final order = {
     for (var i = 0; i < candidates.length; i++) candidates[i].key: i,

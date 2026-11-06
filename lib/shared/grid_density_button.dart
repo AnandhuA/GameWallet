@@ -1,3 +1,5 @@
+import 'app_theme.dart';
+import 'wallet_components.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../features/settings/settings_provider.dart';
@@ -15,7 +17,7 @@ class GridDensityButton extends StatelessWidget {
       tooltip: 'View style',
       icon: const Icon(Icons.grid_view_rounded, size: 20),
       onPressed: () async {
-        final selected = await showModalBottomSheet<Object>(
+        final selected = await showWalletSheet<Object>(
           context: context,
           showDragHandle: true,
           builder: (context) => SafeArea(
@@ -59,7 +61,7 @@ class GridDensityButton extends StatelessWidget {
                   for (final count in [0, 2, 3, 4, 5])
                     ListTile(
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: WalletRadius.control,
                       ),
                       selected: columns == count,
                       selectedTileColor: Theme.of(

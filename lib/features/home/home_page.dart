@@ -1,3 +1,4 @@
+import '../../shared/app_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/models.dart';
@@ -7,8 +8,6 @@ import '../library/library_editor.dart';
 import '../settings/settings_provider.dart';
 import 'home_provider.dart';
 import '../companion/companion_providers.dart';
-import '../companion/game_actions.dart';
-import '../journal/journal_pages.dart';
 import '../settings/preferences_page.dart';
 
 class HomePage extends StatefulWidget {
@@ -32,11 +31,28 @@ class _HomePageState extends State<HomePage> {
     final settings = context.watch<SettingsProvider>();
     final hidden = context.watch<DiscoveryPreferencesProvider>();
     final library = context.watch<LibraryProvider>();
+    final primaryKeys = p.sections.entries
+        .where((e) => e.key != 'Free-to-play')
+        .expand((e) => e.value)
+        .map(p.repository.canonicalKey)
+        .toSet();
+    final free = (p.sections['Free-to-play'] ?? <Game>[])
+        .where(
+          (g) =>
+              !hidden.hidden(g) &&
+              !library.excludedFromDiscovery(g) &&
+              !primaryKeys.contains(p.repository.canonicalKey(g)),
+        )
+        .toList();
     final popular = (p.sections['Popular right now'] ?? <Game>[])
         .where((g) => !hidden.hidden(g) && !library.excludedFromDiscovery(g))
         .toList();
     final trending = smartCandidates(
-      (p.sections['Popular right now'] ?? <Game>[])
+      p.repository
+          .deduplicate([
+            ...(p.sections['Popular right now'] ?? <Game>[]),
+            ...free,
+          ])
           .where((g) => !library.excludedFromDiscovery(g))
           .toList(),
       library,
@@ -53,22 +69,26 @@ class _HomePageState extends State<HomePage> {
               (g) => !hidden.hidden(g) && !library.excludedFromDiscovery(g),
             )
             .toList();
-    final featured = trending.firstOrNull;
+    final featured = trending.firstOrNull ?? free.firstOrNull;
     void reload() =>
         p.load(settings.demo, settings.platforms, forceRefresh: true);
     return Scaffold(
       appBar: AppBar(
-        toolbarHeight: 76,
+        toolbarHeight: 76 * MediaQuery.textScalerOf(context).scale(14) / 14,
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
               'Hi, ${settings.displayName}',
-              style: TextStyle(fontWeight: FontWeight.w800, fontSize: 22),
+              style: TextStyle(fontWeight: FontWeight.w700, fontSize: 22),
             ),
             const Text(
               'What are we playing today?',
-              style: TextStyle(fontSize: 12),
+              style: TextStyle(
+                fontFamily: 'Figtree',
+                fontWeight: FontWeight.w400,
+                fontSize: 12,
+              ),
             ),
           ],
         ),
@@ -95,7 +115,6 @@ class _HomePageState extends State<HomePage> {
           key: const PageStorageKey('home'),
           padding: const EdgeInsets.fromLTRB(16, 20, 16, 28),
           children: [
-            const SizedBox(height: 16),
             if (!settings.setupComplete)
               Align(
                 alignment: Alignment.centerLeft,
@@ -116,6 +135,11 @@ class _HomePageState extends State<HomePage> {
                 icon: Icons.cloud_off,
               ),
             if (p.loading) const LoadingCards(),
+            if (p.notice != null)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: Text(p.notice!),
+              ),
             if (p.error != null)
               EmptyState('Discovery is unavailable', p.error!, retry: reload),
             if (featured != null) ...[
@@ -124,7 +148,7 @@ class _HomePageState extends State<HomePage> {
               FeatureGameCard(featured),
               const SizedBox(height: 12),
               SizedBox(
-                height: 240,
+                height: 240 * MediaQuery.textScalerOf(context).scale(14) / 14,
                 child: GridView.builder(
                   scrollDirection: Axis.horizontal,
                   gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
@@ -173,9 +197,9 @@ class _HomePageState extends State<HomePage> {
                       .map(
                         (p) => Padding(
                           padding: const EdgeInsets.only(right: 8),
-                          child: TextButton(
+                          child: ActionChip(
                             onPressed: () => widget.onBrowse(platform: p.key),
-                            child: Text(p.value),
+                            label: Text(p.value),
                           ),
                         ),
                       )
@@ -235,6 +259,16 @@ class _HomePageState extends State<HomePage> {
               const SizedBox(height: 16),
               PosterShelf(popular),
             ],
+            if (free.isNotEmpty) ...[
+              const SizedBox(height: 28),
+              const SectionHeading('Free-to-play'),
+              TextButton(
+                onPressed: () =>
+                    openExternal(context, 'https://www.freetogame.com/'),
+                child: const Text('Supplementary catalog: FreeToGame'),
+              ),
+              PosterShelf(free),
+            ],
             if (top.isNotEmpty) ...[
               const SizedBox(height: 28),
               const SectionHeading('Top rated'),
@@ -259,6 +293,20 @@ class _HomePageState extends State<HomePage> {
                     .toList(),
               ),
             ],
+            if (!settings.demo)
+              Wrap(
+                children: [
+                  TextButton(
+                    onPressed: () => openExternal(context, 'https://rawg.io/'),
+                    child: const Text('Catalog: RAWG'),
+                  ),
+                  TextButton(
+                    onPressed: () =>
+                        openExternal(context, 'https://www.freetogame.com/'),
+                    child: const Text('FreeToGame'),
+                  ),
+                ],
+              ),
           ],
         ),
       ),
@@ -274,7 +322,7 @@ class SectionHeading extends StatelessWidget {
     text,
     style: Theme.of(
       context,
-    ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800),
+    ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
   );
 }
 
@@ -285,146 +333,86 @@ class FeatureGameCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final entry = context.watch<LibraryProvider>().entry(game);
-    return Card(
-      margin: EdgeInsets.zero,
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: () => openGame(context, game),
-        child: Stack(
-          children: [
-            if (!compact) Positioned.fill(child: GameArt(game, wide: true)),
-            if (!compact)
-              Positioned.fill(
-                child: DecoratedBox(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        Colors.black.withValues(alpha: .78),
-                        Colors.black.withValues(alpha: .68),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            Positioned(right: 0, top: 0, child: GameActionsMenu(game)),
-            Padding(
-              padding: const EdgeInsets.all(14),
-              child: Row(
+    final tokens = WalletTokens.of(context), text = Theme.of(context).textTheme;
+    if (compact) {
+      return GameListRow(game, metadata: game.genres.take(2).join(' · '));
+    }
+    return ClipRRect(
+      borderRadius: WalletRadius.card,
+      child: Stack(
+        children: [
+          Positioned.fill(
+            child: ExcludeSemantics(child: GameArt(game, wide: true)),
+          ),
+          Positioned.fill(
+            child: DecoratedBox(
+              decoration: BoxDecoration(gradient: tokens.scrim),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(WalletSpace.page),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(minHeight: 200),
+              child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.end,
                 children: [
-                  SizedBox(
-                    width: compact ? 84 : 88,
-                    height: compact ? 118 : 145,
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(8),
-                      child: GamePoster(game),
+                  Text(
+                    'Recommended for you',
+                    style: text.labelLarge?.copyWith(
+                      color: tokens.artworkMuted,
                     ),
                   ),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const SizedBox(height: 6),
-                        Text(
-                          compact ? 'Trending game' : 'Pick for you',
-                          style: TextStyle(
-                            color: Theme.of(context).colorScheme.primary,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          game.title,
-                          maxLines: 3,
-                          overflow: TextOverflow.ellipsis,
-                          style: Theme.of(context).textTheme.titleLarge
-                              ?.copyWith(
-                                fontWeight: FontWeight.w800,
-                                color: compact ? null : Colors.white,
-                              ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          '${game.release?.year ?? 'TBA'} · ${game.genres.firstOrNull ?? 'Game'}${game.rating == null ? '' : ' · ${game.rating!.round()}/100'}',
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            color: compact
-                                ? Theme.of(context).colorScheme.onSurfaceVariant
-                                : Colors.white70,
-                            fontSize: 12,
-                          ),
-                        ),
-                        if (!compact)
-                          Padding(
-                            padding: const EdgeInsets.only(top: 10),
-                            child: Wrap(
-                              spacing: 2,
-                              runSpacing: 0,
-                              children: [
-                                TextButton.icon(
-                                  style: TextButton.styleFrom(
-                                    foregroundColor: Colors.white,
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 6,
-                                    ),
-                                  ),
-                                  onPressed: () => editLibrary(context, game),
-                                  icon: Icon(Icons.bookmark_border, size: 17),
-                                  label: Text(
-                                    entry?.status?.label ?? 'Want to play',
-                                    style: TextStyle(fontSize: 11),
-                                  ),
-                                ),
-                                IconButton(
-                                  tooltip: 'Favorite ${game.title}',
-                                  onPressed: () => guarded(
-                                    context,
-                                    () => context
-                                        .read<LibraryProvider>()
-                                        .favorite(game),
-                                  ),
-                                  icon: Icon(
-                                    entry?.favorite == true
-                                        ? Icons.favorite
-                                        : Icons.favorite_border,
-                                    size: 20,
-                                    color: entry?.favorite == true
-                                        ? Theme.of(context).colorScheme.primary
-                                        : Colors.white,
-                                  ),
-                                ),
-                                TextButton.icon(
-                                  style: TextButton.styleFrom(
-                                    foregroundColor: Colors.white,
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 6,
-                                    ),
-                                  ),
-                                  onPressed: () => guarded(context, () async {
-                                    await completeGame(context, game);
-                                  }),
-                                  icon: const Icon(
-                                    Icons.check_circle_outline,
-                                    size: 17,
-                                  ),
-                                  label: const Text(
-                                    'Completed',
-                                    style: TextStyle(fontSize: 11),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                      ],
+                  const SizedBox(height: WalletSpace.md),
+                  GameInteraction(
+                    game: game,
+                    child: Text(
+                      game.title,
+                      style: text.headlineSmall?.copyWith(
+                        color: tokens.artworkText,
+                      ),
                     ),
+                  ),
+                  const SizedBox(height: WalletSpace.sm),
+                  Text(
+                    [
+                      if (game.release != null) '${game.release!.year}',
+                      ...game.genres.take(2),
+                    ].join(' · '),
+                    style: text.bodySmall?.copyWith(color: tokens.artworkMuted),
+                  ),
+                  const SizedBox(height: WalletSpace.md),
+                  Wrap(
+                    spacing: WalletSpace.sm,
+                    runSpacing: WalletSpace.sm,
+                    children: [
+                      FilledButton.icon(
+                        onPressed: () => editLibrary(context, game),
+                        icon: const Icon(Icons.bookmark_border, size: 18),
+                        label: Text(entry?.status?.label ?? 'Want to play'),
+                      ),
+                      OutlinedButton.icon(
+                        onPressed: () => guarded(context, () async {
+                          await context.read<LibraryProvider>().startPlaying(
+                            game,
+                          );
+                        }),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: tokens.artworkText,
+                          side: BorderSide(
+                            color: tokens.artworkMuted.withValues(alpha: .5),
+                          ),
+                        ),
+                        icon: const Icon(Icons.play_arrow_outlined, size: 18),
+                        label: const Text('Play'),
+                      ),
+                    ],
                   ),
                 ],
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -434,71 +422,12 @@ class MiniGameCard extends StatelessWidget {
   final Game game;
   const MiniGameCard(this.game, {super.key});
   @override
-  Widget build(BuildContext context) => Card(
-    margin: EdgeInsets.zero,
-    clipBehavior: Clip.antiAlias,
-    child: InkWell(
-      onTap: () => openGame(context, game),
-      child: Stack(
-        children: [
-          Positioned.fill(child: GameArt(game, wide: true)),
-          Positioned.fill(
-            child: ColoredBox(color: Colors.black.withValues(alpha: .76)),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(9),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                SizedBox(
-                  width: 48,
-                  height: 78,
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(6),
-                    child: GamePoster(game),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        game.title,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 12,
-                        ),
-                      ),
-                      const SizedBox(height: 5),
-                      Text(
-                        game.genres.firstOrNull ?? 'Game',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          color: Theme.of(context).colorScheme.primary,
-                          fontSize: 11,
-                        ),
-                      ),
-                      const SizedBox(height: 5),
-                      Text(
-                        game.rating == null
-                            ? '${game.release?.year ?? 'TBA'}'
-                            : '★ ${game.rating!.round()}',
-                        style: TextStyle(color: Colors.white70, fontSize: 11),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    ),
+  Widget build(BuildContext context) => GameListRow(
+    game,
+    compact: true,
+    metadata: game.genres.take(2).join(' · '),
+    caption:
+        '${game.release?.year ?? 'TBA'}${game.rating == null ? '' : ' · ${game.rating!.round()}/100'}',
   );
 }
 
@@ -510,52 +439,25 @@ class PosterShelf extends StatelessWidget {
     builder: (context, box) {
       final width = box.maxWidth < 600
           ? (box.maxWidth / 3.05).clamp(105.0, 160.0)
-          : 174.0;
+          : 156.0;
       return SingleChildScrollView(
         scrollDirection: Axis.horizontal,
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
-          children: games
-              .map(
-                (g) => Padding(
-                  padding: const EdgeInsets.only(right: 14),
-                  child: SizedBox(
-                    width: width,
-                    child: InkWell(
-                      borderRadius: BorderRadius.circular(10),
-                      onTap: () => openGame(context, g),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          AspectRatio(
-                            aspectRatio: .67,
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(10),
-                              child: GamePoster(g),
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            g.title,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              fontWeight: FontWeight.w700,
-                              fontSize: 13,
-                            ),
-                          ),
-                          const SizedBox(height: 3),
-                          Text(
-                            '${g.release?.year ?? 'TBA'}${g.rating == null ? '' : ' · ${g.rating!.round()}/100'}',
-                            style: Theme.of(context).textTheme.bodySmall,
-                          ),
-                        ],
-                      ),
-                    ),
+          children: [
+            for (final game in games)
+              Padding(
+                padding: const EdgeInsets.only(right: WalletSpace.md),
+                child: SizedBox(
+                  width: width,
+                  child: GamePosterCard(
+                    game,
+                    caption:
+                        '${game.release?.year ?? 'TBA'}${game.rating == null ? '' : ' · ${game.rating!.round()}/100'}',
                   ),
                 ),
-              )
-              .toList(),
+              ),
+          ],
         ),
       );
     },

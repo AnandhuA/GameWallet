@@ -70,6 +70,7 @@ class StarterCatalog extends GameRepository {
     String? platform,
     int? year,
     String sort = 'popular',
+    bool precise = false,
     int page = 0,
     CancelToken? cancel,
     bool forceRefresh = false,

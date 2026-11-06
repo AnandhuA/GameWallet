@@ -1,4 +1,82 @@
-# Game Wallet verification — 3 November 2026
+# Game Wallet verification — 5 November 2026
+
+## RAWG + FreeToGame catalog — 5 November 2026
+
+- Added FreeToGame service/adapter, independent cached repository, federated GameRepository and persistent catalog identity links. RAWG remains primary; FreeToGame supplies free-to-play PC/browser discovery and details without another key. Console/mobile coverage still depends on RAWG.
+- Explore now deduplicates source-aware keys rather than numeric IDs. Confirmed cross-source matches become one card; exact titles require supporting official links or compatible release year/company metadata. Uncertain same-title secondary cards are suppressed and offered for explicit confirmation in details. Editions/sequels remain distinct. Canonical identities and frozen supplementary snapshots remain stable across paging; refresh starts a new snapshot.
+- Home gains attributed free-to-play recommendations/shelf. Popular and Top rated retain RAWG ordering; supplementary ratings are never fabricated. Effective platform/genre/year filters are applied explicitly, including PC/browser mapping. Failed sources produce partial-results notices; Explore exposes Refresh sources. Web CORS restrictions never introduce a proxy or another API key.
+- Detail loading routes by source and supplements missing fields/artwork only after confirmation. Optional Game JSON provenance/fallback-image fields retain compatibility with existing Hive adapters. Source-specific IDs and personal records are never moved. Alias-aware library actions preserve saved IDs, review lookup resolves linked sources, and Playing/Completed/Hidden exclusions span confirmed aliases. Linked metadata provides same-game image fallback through the existing cached-image loader.
+- Source caches use existing expiry/budget, stale fallback, force refresh and generation checks during clearing. FreeToGame downloads deduplicate across readers, cancel unused requests, run with two concurrent downloads and 125ms minimum start spacing. Personal identity links survive API cache clearing; concurrent confirmations serialize to preserve transitive groups.
+- Baseline: 134 tests passed. Current regression suite: **156 tests passed**, three opt-in live checks skipped. Twenty-two new fixture tests cover normalization, source-local ID collisions, strong/ambiguous matching, canonical paging identity, frozen snapshots, alias persistence/reopening, personal-action ID preservation, review lookup, cross-source exclusions, partial/both-source failures, restrictive filters, rating integrity, independent stale caches, cancellation/concurrency, cache clearing and full supplementary detail loading. Phone/desktop details run at 390/1280 widths with 200% text.
+- The opt-in **live FreeToGame smoke check passed** against the real list and detail endpoints and decoded a returned cover through ImageCacheService. The public feed contained 421 records when checked. Live RAWG cross-source matching, browser CORS behavior and physical-device interaction were not tested.
+- Web release build and Wasm dry run passed. The pre-existing Cupertino font-family warning remains. No dependencies, app IDs, icon, backend or account flow were added. No APK generated. README documents integration, limits, attribution and exact live-test command.
+
+
+## Deals missing-cover correction — 4 November 2026
+
+- Confirmed that several latest public feed records have neither Steam links nor artwork. Direct Epic page inspection was challenged, so no page scraping or challenge bypass was added. The supplied repository assets contain store/platform icons, not game covers.
+- Artwork lookups now use opt-in precise/exact RAWG search flags, with distinct cache keys. Normal Explore searches keep their previous behavior. Automatic selection still rejects ambiguous titles, editions and wrong-platform games.
+- Feed cache version 2 refreshes legacy version-1 records that may have discarded Steam links; legacy data remains a labeled offline fallback. Personal records and image bytes are not deleted.
+- Cover lookup shows a loading indicator. Refresh Deals increments an artwork revision, retries failed cached-image candidates and forces catalog enrichment to retry, including when the prior result had no usable cover.
+- Added real image-decoding widget fixtures for direct RAWG lookup, failed Steam candidates followed by RAWG artwork, and retry after an empty cover result; added legacy-cache refresh/offline coverage and precise-request assertions. Test repository overrides only gained the new optional precise parameter.
+- Formatting, analysis and diff checks passed. **134 tests passed**, two opt-in live tests skipped. Images were decoded from controlled fixture bytes using the actual cached-image widget. Live RAWG enrichment and physical-device loading were not verified; unavailable source artwork still uses placeholders. No APK generated.
+
+
+## Deals cover artwork and details — 4 November 2026
+
+- Deal rows now include cover thumbnails and open a dedicated in-app detail route with a banner, cover, title, source, recorded date, platform, optional ratings and external Epic action. The historical/possibly expired giveaway disclaimer remains prominent.
+- Valid HTTPS Steam app links supplied by the feed generate matching Steam cover/header image candidates. Steam URLs survive feed-cache serialization; legacy records without the field remain readable. If linked Steam artwork fails, a configured RAWG key can attempt the same safe catalog matching used for records without Steam links.
+- Additional metadata uses the existing GameRepository, cached RAWG search/details and stable rawg IDs. Only a unique exact normalized title/platform match from a complete result set is automatic; editions, ambiguous results and wrong-platform matches are not guessed. Ambiguous candidates require explicit selection. Details show available description/release/genres and link to full game details for library actions, journal, screenshots and store prices.
+- The shared cached-image loader retains same-game fallback order, placeholders, offline images and web fallback behavior. Search lookups deduplicate, run at a maximum concurrency of two, expire with existing metadata freshness, respect cache generation and keep at most 200 in-memory results. Superseded/disposed detail loads cannot overwrite newer selections.
+- Added eight focused tests: safe Steam links and serialization, exact/edition/platform/ambiguity matching, shared-search concurrency and cache clearing, metadata/stale state/manual selection, failures/disposal, late responses, and navigation from real app Deals to details without a key at 390/1280 widths and 200% text. Existing image fallback tests remain intact.
+- **130 tests passed**, two opt-in live checks skipped; analysis clean, formatting and diff checks passed. A public Steam cover URL derived from the feed's Subnautica app link returned HTTP 200 and image/jpeg. No live RAWG enrichment was claimed or tested; catalog behavior uses fixtures. Web release build and Wasm dry run passed; the pre-existing Cupertino font-family warning remains. No APK or native-device test.
+
+
+## Deals replaces LineUp — 4 November 2026
+
+- Navigation is Home / Explore / My games / Deals / Profile. My games remains centered and selected at launch. Deals loads only when selected, independently of the RAWG key or demo catalog; fictional demo labels are suppressed for this real feed.
+- Added a source record model, isolated Epic JSON parser, Dio service, bounded-cache repository, focused Provider and responsive searchable page. Latest recorded giveaway groups and older history support All/PC/Android/iOS/unspecified filters, labeled optional Epic/Metacritic ratings, validated Epic links, source attribution and last-fetched timestamps.
+- The feed supplies history, not verified live offers, end dates, prices or artwork. No current-free claims, deadlines, price estimates, guessed RAWG matches or unrelated images are added. No upstream updater code is copied; the source is attributed.
+- LineUp navigation, details/menu actions, wheel sources and statistics are removed. Compatibility models/providers, existing list records and legacy direct-screen tests remain; no personal boxes, IDs, migrations or saved lists are deleted.
+- Metadata cache is reused with one-hour feed freshness, forced refresh and labeled stale fallback. Malformed cache can recover, invalid responses do not replace valid cache, superseded/disposed requests are cancelled, and cache generation prevents in-flight requests from repopulating cleared cache.
+- Baseline: 110 tests passed, one live check skipped. Current suite: **122 tests passed**, two opt-in live checks skipped. Twelve new fixture tests cover parsing/date/link validation, duplicates, optional values, platform occurrences, cache expiry/refresh/reopening, rate/error fallback, clear-during-download with personal-data preservation, provider deduplication/stale responses/disposal, and phone/desktop layouts at 200% text in dark/light/AMOLED themes. Two existing UI expectations were updated for the intentionally removed LineUp tab/action; legacy persistence tests remain.
+- Opt-in **live Epic giveaway feed smoke check passed** using the real Dio service and parser against the published GitHub JSON. This verifies feed access and parsing, not Epic checkout availability. The test explicitly restores real networking within its opt-in zone; normal fixture tests retain Flutter's network blocking.
+- Formatting, Flutter analysis and regression tests passed. Web release build passed, including Wasm dry run. The existing Material-only Cupertino font-family warning remains. Native device and browser interaction/CORS checks were not performed; no APK generated.
+
+
+## Pure black (AMOLED) appearance — 4 November 2026
+
+- Added Pure black as the fourth Appearance choice. It saves the existing dark ThemeMode plus an optional `amoled` preference. System, Light and Dark clear that flag, so the choices are mutually exclusive. Old preferences default to standard themes with no migration or adapter changes.
+- The central theme builder accepts an optional AMOLED flag. Dark page backgrounds, app bars, bottom navigation and navigation rails become `#000000`; cards, sheets and inputs use `#080808`, raised surfaces `#141414` and outlines `#262626`. Existing accent colors, typography, artwork and standard theme palettes remain intact. The flag has no effect on light-theme construction.
+- Added six focused tests for legacy defaults, persistence after reopening Hive, unchanged accent/personal records, cache clearing, all four appearance selections, exact black/surface colors and readable contrast across every accent choice. Widget tests exercise immediate updates at 390px/1280px with 200% text scaling, including System mode under a light OS appearance.
+- Formatting, analysis and `git diff --check` passed. **110 tests passed**, with the opt-in live-service test skipped. Existing tests were not edited.
+- README and design-system documentation now describe the option. No native-device checks, web/native build or external-service retest was needed for this theme-only change. No APK generated.
+
+## HTML UI redesign — 4 November 2026
+
+### Presentation changes
+
+- Applied the supplied `Game Wallet.html` visual language through a central Material 3 theme, ThemeExtension tokens and shared presentation components. Added bundled Bricolage Grotesque/Figtree assets and SIL Open Font Licenses, registered during startup. No font package, backend or dependency upgrade was added.
+- Added dark/light palettes, accessible accent tones, shared radii/spacing, compact poster/list cards, artwork-backed Playing cards, status pills, section headers, adaptive sheets and keyboard context actions. Bright-artwork scrims are checked against a white image for readable foreground text. Preserved all saved accent choices; the only provider edit is the user-approved teal fallback.
+- Kept Home/Explore/My games/LineUp/Profile destinations, center/default My games, IndexedStack and existing route callbacks. My games uses a compact greeting, search expansion, saved layout preferences, responsive Playing columns and plans/recent finishes only under Playing.
+- Re-laid out details, completion/date editing, recommendations, Explore cards, collection rows/progress, Profile counters and supporting forms. Journal/calendar/collection editors, preferences and settings use bounded form widths. Store offers use compact rows and retain their original matching, caching, currency and redirect handlers.
+- Existing `GameArt`/CachedCatalogImage source order and cache/session logic remain intact. Gallery changes are limited to presentation radii and reduced-motion navigation. Home's Play shortcut delegates to the existing LibraryProvider operation; existing completion/favorite actions remain reachable through the game menu/details.
+
+### Checks and evidence
+
+- Baseline before edits: **91 tests passed**, with the explicit live-service check skipped.
+- Original six test files are unchanged. Added **13 redesign tests** covering all available accent choices, keyboard/long-press/right-click menus, adaptive layout/filter sheets, layout persistence, completion cancellation, reduced motion, all five destinations and supporting screens at 390px/1280px and 100%/200% text.
+- Final regression suite: **104 tests passed**, with one opt-in live-service check skipped. The separate readable-font preview suite also passed all 13 tests.
+- Dart formatting and Flutter analysis passed with no issues. `git diff --check` passed.
+- Rendered **40 fixture screenshots** across phone and desktop layouts, including details, completion, editors, calendar, wheel, preferences, settings and prices. Reviewed representative dark/light, card, sheet, form and pricing renders. See the [preview index](docs/redesign-previews.md) and [design system](docs/design-system.md).
+- Release web build passed, including Wasm compatibility dry-run. The previously recorded Material-only Cupertino font-family warning remains; no framework files or tree-shaking settings were changed to suppress it.
+- Protected-file audit: core models/adapters/migrations/API/storage/cache/repositories, all other providers, application IDs/icons and the dependency lockfile are unchanged. Existing API keys and user records were not opened, overwritten or used for screenshots.
+
+### Limits
+
+Screenshots and new visual tests use isolated temporary Hive boxes, fictional demo records and explicitly labeled price fixtures. They are not live offers or personal-library screenshots. No external service integration was retested during this presentation-only update. Native Android/iOS/Windows builds, physical-device installs and browser checkout/CORS interactions were not repeated. No APK generated. The HTML file was inspected as source; its local-file browser preview was blocked, so its CSS tokens, sizing and source-defined interactions guided implementation.
+
+Earlier verification entries below are historical and retain their original scope.
 
 ## Cleanup scope
 

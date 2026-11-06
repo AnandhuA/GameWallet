@@ -1,4 +1,5 @@
 import 'playthrough_dates.dart';
+import '../../shared/app_theme.dart';
 import 'package:flutter/services.dart';
 import 'personal_overview.dart';
 import '../../shared/grid_density_button.dart';
@@ -130,14 +131,14 @@ class _PlayTrackingPageState extends State<PlayTrackingPage> {
               : const Duration(milliseconds: 160),
           decoration: BoxDecoration(
             color: view == value
-                ? colors.onSurface.withValues(alpha: .08)
+                ? colors.surfaceContainerHigh
                 : Colors.transparent,
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: WalletRadius.control,
           ),
           child: InkWell(
             key: ValueKey('tracking-tab-$value'),
             onTap: () => setState(() => view = value),
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: WalletRadius.control,
             child: ConstrainedBox(
               constraints: const BoxConstraints(minHeight: 48),
               child: Padding(
@@ -180,7 +181,7 @@ class _PlayTrackingPageState extends State<PlayTrackingPage> {
                             : colors.surfaceContainerHighest.withValues(
                                 alpha: .5,
                               ),
-                        borderRadius: BorderRadius.circular(7),
+                        borderRadius: WalletRadius.control,
                       ),
                       child: Text(
                         '$count',
@@ -250,13 +251,13 @@ class _PlayTrackingPageState extends State<PlayTrackingPage> {
                           filled: true,
                           fillColor: colors.surfaceContainerLow,
                           border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(16),
+                            borderRadius: WalletRadius.card,
                             borderSide: BorderSide(
                               color: colors.outlineVariant,
                             ),
                           ),
                           enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(16),
+                            borderRadius: WalletRadius.card,
                             borderSide: BorderSide(
                               color: colors.outlineVariant.withValues(
                                 alpha: .4,
@@ -273,15 +274,19 @@ class _PlayTrackingPageState extends State<PlayTrackingPage> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                'My games',
-                                style: theme.textTheme.headlineMedium?.copyWith(
-                                  fontWeight: FontWeight.w800,
+                                'Hi, ${context.watch<SettingsProvider>().displayName}',
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: theme.textTheme.headlineSmall?.copyWith(
+                                  fontWeight: FontWeight.w700,
                                   letterSpacing: -.5,
                                 ),
                               ),
                               const SizedBox(height: 4),
                               Text(
-                                'Hi, ${context.watch<SettingsProvider>().displayName} · Your gaming space',
+                                'Your gaming space · ${playing.length} playing · ${history.length} played',
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
                                 style: theme.textTheme.bodySmall?.copyWith(
                                   color: colors.onSurfaceVariant,
                                 ),
@@ -294,10 +299,13 @@ class _PlayTrackingPageState extends State<PlayTrackingPage> {
                           onPressed: openSearch,
                           icon: const Icon(Icons.search_rounded),
                         ),
-                        IconButton.filledTonal(
-                          tooltip: 'Discover more games',
-                          onPressed: widget.onExplore,
-                          icon: const Icon(Icons.add),
+                        Tooltip(
+                          message: 'Discover more games',
+                          child: FilledButton.icon(
+                            onPressed: widget.onExplore,
+                            icon: const Icon(Icons.add, size: 18),
+                            label: const Text('Add'),
+                          ),
                         ),
                       ],
                     ),
@@ -305,12 +313,12 @@ class _PlayTrackingPageState extends State<PlayTrackingPage> {
           ),
         ),
         const SizedBox(height: 18),
-        if (query.isEmpty) const PersonalOverview(),
+
         Container(
           padding: const EdgeInsets.all(4),
           decoration: BoxDecoration(
-            color: colors.onSurface.withValues(alpha: .035),
-            borderRadius: BorderRadius.circular(16),
+            color: colors.surfaceContainerLow,
+            borderRadius: WalletRadius.card,
             border: Border.all(
               color: colors.outlineVariant.withValues(alpha: .25),
             ),
@@ -437,11 +445,30 @@ class _PlayTrackingPageState extends State<PlayTrackingPage> {
               );
             },
           )
+        else if (view == 0 && entries.isNotEmpty)
+          LayoutBuilder(
+            builder: (context, box) {
+              final count = MediaQuery.textScalerOf(context).scale(14) > 21
+                  ? 1
+                  : (box.maxWidth / 360).floor().clamp(1, 3);
+              final width =
+                  (box.maxWidth - (count - 1) * WalletSpace.md) / count;
+              return Wrap(
+                spacing: WalletSpace.md,
+                runSpacing: WalletSpace.md,
+                children: [
+                  for (final entry in entries)
+                    SizedBox(width: width, child: entryCard(entry)),
+                ],
+              );
+            },
+          )
         else
           for (final entry in entries) ...[
             entryCard(entry),
             const SizedBox(height: 12),
           ],
+        if (view == 0 && query.isEmpty) const PersonalOverview(),
       ],
     );
   }
@@ -470,9 +497,7 @@ class _TrackingGameCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context), colors = theme.colorScheme;
     final game = entry.game;
-    final muted = colors.onSurfaceVariant;
     final library = context.watch<LibraryProvider>();
     final active = library.active(game);
     final playing = entry.status == LibraryStatus.playing && !playedView;
@@ -482,154 +507,10 @@ class _TrackingGameCard extends StatelessWidget {
         : playing && active?.startDate == null
         ? null
         : library.timing(game);
-    final panel = Color.alphaBlend(
-      colors.primary.withValues(alpha: .035),
-      colors.surface,
-    );
     final metadata = [
-      if (game.release != null) '${game.release!.year}',
       ...game.genres.take(2),
+      ...game.platforms.take(1),
     ].join(' · ');
-    if (grid) {
-      final titleStyle = theme.textTheme.titleSmall?.copyWith(
-        fontSize: 14,
-        fontWeight: FontWeight.w700,
-        height: 1.3,
-      );
-      return Card(
-        margin: EdgeInsets.zero,
-        elevation: 0,
-        color: compact ? Colors.transparent : panel,
-        clipBehavior: Clip.antiAlias,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(14),
-          side: compact
-              ? BorderSide.none
-              : BorderSide(color: colors.outlineVariant.withValues(alpha: .4)),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            InkWell(
-              onTap: () => openGame(context, game),
-              onLongPress: () => GameActionsMenu(
-                game,
-                primaryLabel: actionLabel,
-                primaryAction: onAction,
-                onOpenJournal: onJournal,
-              ).show(context),
-              onSecondaryTap: () => GameActionsMenu(
-                game,
-                primaryLabel: actionLabel,
-                primaryAction: onAction,
-                onOpenJournal: onJournal,
-              ).show(context),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  AspectRatio(
-                    aspectRatio: compact ? .82 : .72,
-                    child: Stack(
-                      fit: StackFit.expand,
-                      children: [GameArt(game)],
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(10, 10, 10, 2),
-                    child: ConstrainedBox(
-                      constraints: BoxConstraints(
-                        minHeight:
-                            MediaQuery.textScalerOf(
-                              context,
-                            ).scale(titleStyle?.fontSize ?? 14) *
-                            2.6,
-                      ),
-                      child: Text(
-                        game.title,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: titleStyle,
-                      ),
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 10),
-                    child: Text(
-                      [
-                        if (game.release != null) '${game.release!.year}',
-                        if (!compact) status,
-                      ].join(' · '),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: theme.textTheme.labelSmall?.copyWith(color: muted),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            if (timing != null)
-              Padding(
-                padding: const EdgeInsets.fromLTRB(10, 5, 10, 0),
-                child: Text(
-                  timing,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.labelSmall?.copyWith(color: muted),
-                ),
-              ),
-            if (compact && actionLabel == 'Start playing')
-              Tooltip(
-                message: '$actionLabel ${game.title}',
-                child: TextButton(
-                  onPressed: onAction,
-                  style: TextButton.styleFrom(minimumSize: const Size(0, 48)),
-                  child: Text(actionLabel),
-                ),
-              )
-            else if (compact)
-              const SizedBox(height: 12)
-            else
-              Padding(
-                padding: const EdgeInsets.fromLTRB(6, 4, 2, 4),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: TextButton(
-                        onPressed: onAction,
-                        style: TextButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 4,
-                            vertical: 8,
-                          ),
-                          minimumSize: const Size(0, 48),
-                        ),
-                        child: Text(
-                          onAction == null ? status : actionLabel,
-                          textAlign: TextAlign.center,
-                          maxLines: 2,
-                          style: theme.textTheme.labelMedium?.copyWith(
-                            color: onAction == null ? muted : colors.primary,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ),
-                    ),
-                    IconButton(
-                      tooltip: 'Journal for ${game.title}',
-                      onPressed: onJournal,
-                      icon: const Icon(Icons.edit_note, size: 20),
-                    ),
-                  ],
-                ),
-              ),
-          ],
-        ),
-      );
-    }
-    final neutralPanel = Color.alphaBlend(
-      colors.onSurface.withValues(alpha: .035),
-      colors.surface,
-    );
     void actions() => GameActionsMenu(
       game,
       primaryLabel: actionLabel,
@@ -637,323 +518,64 @@ class _TrackingGameCard extends StatelessWidget {
       onOpenJournal: onJournal,
     ).show(context);
     if (playing) {
-      final highlight = theme.brightness == Brightness.dark
-          ? colors.primary
-          : colors.primaryContainer;
+      return PlayingCard(
+        game: game,
+        metadata: metadata,
+        days: days,
+        dateLabel: active?.startDate == null
+            ? 'Add start date'
+            : 'Started ${MaterialLocalizations.of(context).formatMediumDate(active!.startDate!)}',
+        onDates: () => editPlaythroughDates(context, game, run: active),
+        onComplete: onAction,
+        onJournal: onJournal,
+        onMenu: actions,
+      );
+    }
+    if (grid) {
+      final completedDays = playedView ? library.completedDays(game) : null;
       return Card(
-        margin: EdgeInsets.zero,
-        clipBehavior: Clip.antiAlias,
-        color: const Color(0xFF121619),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(18),
-          side: const BorderSide(color: Color(0xFF282D30)),
-        ),
+        color: Colors.transparent,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Stack(
-              children: [
-                Positioned.fill(
-                  child: ExcludeSemantics(
-                    child: Align(
-                      alignment: Alignment.centerRight,
-                      child: FractionallySizedBox(
-                        widthFactor: .8,
-                        heightFactor: 1,
-                        child: Opacity(
-                          opacity: .38,
-                          child: GameArt(game, wide: true),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-                const Positioned.fill(
-                  child: DecoratedBox(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [
-                          Color(0xFF121619),
-                          Color(0xF0121619),
-                          Color(0x80121619),
-                        ],
-                        stops: [0, .4, 1],
-                      ),
-                    ),
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(14, 12, 14, 6),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Row(
-                        children: [
-                          Container(
-                            width: 6,
-                            height: 6,
-                            decoration: BoxDecoration(
-                              color: highlight,
-                              shape: BoxShape.circle,
-                            ),
-                          ),
-                          const SizedBox(width: 7),
-                          Expanded(
-                            child: Text(
-                              'Now playing',
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: theme.textTheme.labelMedium?.copyWith(
-                                color: Colors.white70,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          if (days != null)
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 9,
-                                vertical: 4,
-                              ),
-                              decoration: BoxDecoration(
-                                color: highlight.withValues(alpha: .14),
-                                borderRadius: BorderRadius.circular(7),
-                              ),
-                              child: Text(
-                                'Day $days',
-                                style: theme.textTheme.labelMedium?.copyWith(
-                                  color: highlight,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-                            ),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-                      InkWell(
-                        onTap: () => openGame(context, game),
-                        onLongPress: actions,
-                        onSecondaryTap: actions,
-                        borderRadius: BorderRadius.circular(10),
-                        child: Row(
-                          children: [
-                            SizedBox(
-                              width: 64,
-                              height: 88,
-                              child: ClipRRect(
-                                borderRadius: BorderRadius.circular(9),
-                                child: GameArt(game),
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    game.title,
-                                    maxLines: 2,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: theme.textTheme.titleMedium
-                                        ?.copyWith(
-                                          color: Colors.white,
-                                          fontWeight: FontWeight.w700,
-                                          height: 1.25,
-                                        ),
-                                  ),
-                                  TextButton.icon(
-                                    style: TextButton.styleFrom(
-                                      foregroundColor: const Color(0xFFB8C1C7),
-                                      padding: EdgeInsets.zero,
-                                      minimumSize: const Size(0, 44),
-                                      alignment: Alignment.centerLeft,
-                                    ),
-                                    onPressed: () =>
-                                        editPlaythroughDates(context, game),
-                                    icon: const Icon(
-                                      Icons.calendar_today_outlined,
-                                      size: 14,
-                                    ),
-                                    label: Text(
-                                      active?.startDate == null
-                                          ? 'Add start date'
-                                          : 'Started ${MaterialLocalizations.of(context).formatMediumDate(active!.startDate!)}',
-                                      maxLines: 2,
-                                      style: theme.textTheme.bodySmall
-                                          ?.copyWith(
-                                            color: const Color(0xFFB8C1C7),
-                                          ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
+            GamePosterCard(
+              game,
+              onMenu: actions,
+              caption: completedDays == null
+                  ? null
+                  : '$completedDays ${completedDays == 1 ? 'day' : 'days'}',
             ),
-            Container(
-              decoration: const BoxDecoration(
-                color: Color(0xFF151A1E),
-                border: Border(top: BorderSide(color: Color(0xFF282D30))),
+            if (compact && actionLabel == 'Start playing')
+              Tooltip(
+                message: '$actionLabel ${game.title}',
+                child: TextButton(
+                  onPressed: onAction,
+                  child: Text(actionLabel),
+                ),
               ),
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-              child: LayoutBuilder(
-                builder: (context, box) {
-                  final complete = FilledButton.tonalIcon(
-                    style: FilledButton.styleFrom(
-                      backgroundColor: highlight.withValues(alpha: .16),
-                      foregroundColor: highlight,
-                      minimumSize: const Size(0, 44),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      padding: const EdgeInsets.symmetric(horizontal: 12),
-                    ),
-                    onPressed: onAction,
-                    icon: const Icon(
-                      Icons.check_circle_outline_rounded,
-                      size: 18,
-                    ),
-                    label: const Text('Complete game'),
-                  );
-                  final journal = TextButton.icon(
-                    style: TextButton.styleFrom(
-                      foregroundColor: Colors.white70,
-                      minimumSize: const Size(0, 44),
-                      padding: const EdgeInsets.symmetric(horizontal: 10),
-                    ),
-                    onPressed: onJournal,
-                    icon: const Icon(Icons.edit_note_rounded, size: 20),
-                    label: Text(
-                      journalCount > 0 ? 'Journal ($journalCount)' : 'Journal',
-                    ),
-                  );
-                  if (MediaQuery.textScalerOf(context).scale(14) > 19 ||
-                      box.maxWidth < 300) {
-                    return Wrap(spacing: 8, children: [complete, journal]);
-                  }
-                  return Row(
-                    children: [
-                      Expanded(child: complete),
-                      const SizedBox(width: 8),
-                      journal,
-                    ],
-                  );
-                },
-              ),
-            ),
           ],
         ),
       );
     }
-    return Card(
-      margin: EdgeInsets.zero,
-      color: neutralPanel,
-      clipBehavior: Clip.antiAlias,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: colors.onSurface.withValues(alpha: .08)),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(12, 12, 12, 8),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
+    return GameListRow(
+      game,
+      metadata: metadata,
+      caption: timing,
+      onMenu: actions,
+      footer: Padding(
+        padding: const EdgeInsets.only(top: WalletSpace.sm),
+        child: Wrap(
+          spacing: WalletSpace.sm,
           children: [
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                InkWell(
-                  onTap: () => openGame(context, game),
-                  onLongPress: actions,
-                  onSecondaryTap: actions,
-                  borderRadius: BorderRadius.circular(10),
-                  child: SizedBox(
-                    width: 76,
-                    height: 108,
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(10),
-                      child: GameArt(game),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      InkWell(
-                        onTap: () => openGame(context, game),
-                        onLongPress: actions,
-                        onSecondaryTap: actions,
-                        child: Text(
-                          game.title,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: theme.textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.w700,
-                            height: 1.25,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        metadata,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: muted,
-                        ),
-                      ),
-                      if (timing != null)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 6),
-                          child: Text(
-                            timing,
-                            style: theme.textTheme.labelSmall?.copyWith(
-                              color: colors.primary,
-                            ),
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
-              ],
+            TextButton.icon(
+              onPressed: onAction,
+              icon: Icon(actionIcon, size: 18),
+              label: Text(actionLabel),
             ),
-            const SizedBox(height: 10),
-            Container(
-              height: 1,
-              color: colors.onSurface.withValues(alpha: .07),
-            ),
-            const SizedBox(height: 6),
-            Wrap(
-              spacing: 8,
-              crossAxisAlignment: WrapCrossAlignment.center,
-              children: [
-                TextButton.icon(
-                  style: TextButton.styleFrom(
-                    foregroundColor: colors.primary,
-                    minimumSize: const Size(0, 48),
-                    padding: const EdgeInsets.symmetric(horizontal: 10),
-                  ),
-                  onPressed: onAction,
-                  icon: Icon(actionIcon, size: 18),
-                  label: Text(
-                    onAction == null ? status : actionLabel,
-                    textAlign: TextAlign.center,
-                  ),
-                ),
-                IconButton(
-                  tooltip: 'Journal for ${game.title}',
-                  onPressed: onJournal,
-                  icon: const Icon(Icons.edit_note_rounded, size: 23),
-                  color: muted,
-                ),
-              ],
+            TextButton.icon(
+              onPressed: onJournal,
+              icon: const Icon(Icons.edit_note, size: 18),
+              label: const Text('Journal'),
             ),
           ],
         ),

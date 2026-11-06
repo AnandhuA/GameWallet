@@ -2,11 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'cached_catalog_image.dart';
+import 'app_theme.dart';
+import 'wallet_components.dart';
+export 'wallet_components.dart';
 
 import '../core/models.dart';
 import '../features/details/details_page.dart';
 import '../features/library/library_provider.dart';
-import '../features/companion/game_actions.dart';
 
 const accent = Color(0xFF00B4CF);
 Future<void> openExternal(BuildContext context, String value) async {
@@ -95,21 +97,11 @@ class GameArt extends StatelessWidget {
         game.artwork,
       ],
       ...game.screenshots,
+      ...game.fallbackImages,
     ]);
     final placeholder = DecoratedBox(
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            Color.lerp(
-              const Color(0xFF332454),
-              const Color(0xFF155960),
-              (game.id % 7) / 7,
-            )!,
-            const Color(0xFF101323),
-          ],
-        ),
+        color: Theme.of(context).colorScheme.surfaceContainerHigh,
       ),
       child: Center(
         child: Icon(
@@ -122,7 +114,7 @@ class GameArt extends StatelessWidget {
                 ][game.id % 4]
               : Icons.sports_esports_outlined,
           size: wide ? 110 : 64,
-          color: Colors.white38,
+          color: Theme.of(context).colorScheme.onSurfaceVariant,
         ),
       ),
     );
@@ -150,86 +142,7 @@ class GameCard extends StatelessWidget {
   final Game game;
   const GameCard(this.game, {super.key});
   @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colors = theme.colorScheme;
-    final titleStyle = theme.textTheme.titleSmall?.copyWith(
-      fontWeight: FontWeight.w700,
-      height: 1.35,
-    );
-    return Material(
-      color: Colors.transparent,
-      borderRadius: BorderRadius.circular(14),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(14),
-        onTap: () => openGame(context, game),
-        onLongPress: () => GameActionsMenu(game).show(context),
-        onSecondaryTap: () => GameActionsMenu(game).show(context),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            AspectRatio(
-              aspectRatio: .78,
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(14),
-                child: Stack(
-                  fit: StackFit.expand,
-                  children: [GamePoster(game)],
-                ),
-              ),
-            ),
-            const SizedBox(height: 9),
-            ConstrainedBox(
-              constraints: BoxConstraints(
-                minHeight:
-                    MediaQuery.textScalerOf(
-                      context,
-                    ).scale(titleStyle?.fontSize ?? 14) *
-                    2.7,
-              ),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 2),
-                child: Text(
-                  game.title,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: titleStyle,
-                ),
-              ),
-            ),
-            const SizedBox(height: 4),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(2, 0, 2, 4),
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.star_rounded,
-                    size: 16,
-                    color: game.rating == null
-                        ? colors.onSurfaceVariant
-                        : const Color(0xFFD99B1C),
-                  ),
-                  const SizedBox(width: 4),
-                  Expanded(
-                    child: Text(
-                      '${game.rating == null ? 'Unrated' : game.rating!.round()}${game.release == null ? '' : '  ·  ${game.release!.year}'}',
-                      maxLines: 1,
-                      softWrap: false,
-                      overflow: TextOverflow.ellipsis,
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: colors.onSurfaceVariant,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+  Widget build(BuildContext context) => GamePosterCard(game);
 }
 
 class GamePoster extends StatelessWidget {
@@ -270,7 +183,7 @@ class GamePoster extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
                 decoration: BoxDecoration(
                   color: Colors.black.withValues(alpha: .7),
-                  borderRadius: BorderRadius.circular(7),
+                  borderRadius: WalletRadius.control,
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
@@ -318,9 +231,9 @@ class GameGrid extends StatelessWidget {
   Widget build(BuildContext context) => LayoutBuilder(
     builder: (context, box) {
       final count = columns == 0
-          ? (box.maxWidth / 205).floor().clamp(2, 6)
+          ? (box.maxWidth / 160).floor().clamp(2, 7)
           : columns;
-      final gap = count >= 4 ? 8.0 : 12.0;
+      const gap = WalletSpace.md;
       final width = (box.maxWidth - (count - 1) * gap) / count;
       return Wrap(
         spacing: gap,
@@ -349,7 +262,7 @@ class Notice extends StatelessWidget {
     margin: const EdgeInsets.only(bottom: 16),
     decoration: BoxDecoration(
       color: Theme.of(context).colorScheme.secondaryContainer,
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: WalletRadius.control,
     ),
     child: Row(
       children: [
@@ -420,7 +333,7 @@ class LoadingCards extends StatelessWidget {
               height: 235,
               decoration: BoxDecoration(
                 color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: WalletRadius.card,
               ),
             ),
           ),
@@ -454,52 +367,5 @@ class DenseGameCard extends StatelessWidget {
   final String? caption;
   const DenseGameCard(this.game, {super.key, this.caption});
   @override
-  Widget build(BuildContext context) => Column(
-    crossAxisAlignment: CrossAxisAlignment.stretch,
-    children: [
-      AspectRatio(
-        aspectRatio: .72,
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(10),
-          child: Stack(
-            fit: StackFit.expand,
-            children: [
-              InkWell(
-                onTap: () => openGame(context, game),
-                onLongPress: () => GameActionsMenu(game).show(context),
-                onSecondaryTap: () => GameActionsMenu(game).show(context),
-                child: GameArt(game),
-              ),
-            ],
-          ),
-        ),
-      ),
-      const SizedBox(height: 7),
-      InkWell(
-        onTap: () => openGame(context, game),
-        onLongPress: () => GameActionsMenu(game).show(context),
-        onSecondaryTap: () => GameActionsMenu(game).show(context),
-        child: Text(
-          game.title,
-          maxLines: 2,
-          overflow: TextOverflow.ellipsis,
-          style: Theme.of(context).textTheme.labelMedium?.copyWith(
-            fontWeight: FontWeight.w600,
-            height: 1.3,
-          ),
-        ),
-      ),
-      if (caption != null) ...[
-        const SizedBox(height: 4),
-        Text(
-          caption!,
-          maxLines: 2,
-          overflow: TextOverflow.ellipsis,
-          style: Theme.of(context).textTheme.labelSmall?.copyWith(
-            color: Theme.of(context).colorScheme.onSurfaceVariant,
-          ),
-        ),
-      ],
-    ],
-  );
+  Widget build(BuildContext context) => GamePosterCard(game, caption: caption);
 }

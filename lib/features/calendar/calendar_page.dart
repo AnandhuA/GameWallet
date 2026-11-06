@@ -147,98 +147,106 @@ class _PlanEditorState extends State<PlanEditor> {
   @override
   Widget build(BuildContext context) => Scaffold(
     appBar: AppBar(title: const Text('Plan play session')),
-    body: ListView(
-      padding: const EdgeInsets.all(16),
-      children: [
-        CatalogSourceLabel(demo: widget.game.demo),
-        Text(widget.game.title, style: Theme.of(context).textTheme.titleLarge),
-        ListTile(
-          title: const Text('Date'),
-          subtitle: Text(date.toString().split(' ').first),
-          trailing: const Icon(Icons.calendar_month),
-          onTap: () async {
-            final result = await showDatePicker(
-              context: context,
-              initialDate: date,
-              firstDate: DateTime(2020),
-              lastDate: DateTime(2100),
-            );
-            if (result != null) {
-              setState(
-                () => date = DateTime(
-                  result.year,
-                  result.month,
-                  result.day,
-                  date.hour,
-                  date.minute,
-                ),
-              );
-            }
-          },
-        ),
-        SwitchListTile(
-          title: const Text('Include a time'),
-          value: hasTime,
-          onChanged: (v) => setState(() => hasTime = v),
-        ),
-        if (hasTime)
+    body: WalletViewport(
+      form: true,
+      child: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          CatalogSourceLabel(demo: widget.game.demo),
+          Text(
+            widget.game.title,
+            style: Theme.of(context).textTheme.titleLarge,
+          ),
           ListTile(
-            title: const Text('Time'),
-            subtitle: Text(TimeOfDay.fromDateTime(date).format(context)),
+            title: const Text('Date'),
+            subtitle: Text(date.toString().split(' ').first),
+            trailing: const Icon(Icons.calendar_month),
             onTap: () async {
-              final result = await showTimePicker(
+              final result = await showDatePicker(
                 context: context,
-                initialTime: TimeOfDay.fromDateTime(date),
+                initialDate: date,
+                firstDate: DateTime(2020),
+                lastDate: DateTime(2100),
               );
               if (result != null) {
                 setState(
                   () => date = DateTime(
-                    date.year,
-                    date.month,
-                    date.day,
-                    result.hour,
-                    result.minute,
+                    result.year,
+                    result.month,
+                    result.day,
+                    date.hour,
+                    date.minute,
                   ),
                 );
               }
             },
           ),
-        TextField(
-          controller: notes,
-          maxLines: 4,
-          maxLength: 2000,
-          decoration: const InputDecoration(labelText: 'Session notes'),
-        ),
-        CheckboxListTile(
-          contentPadding: EdgeInsets.zero,
-          value: completed,
-          onChanged: (v) => setState(() => completed = v!),
-          title: const Text('Session completed'),
-          subtitle: const Text('This does not mark the whole game completed.'),
-        ),
-        if (error != null) Notice(error!),
-        FilledButton(
-          onPressed: saving ? null : save,
-          child: Text(saving ? 'Saving…' : 'Save session'),
-        ),
-        if (widget.initial != null)
-          TextButton(
-            onPressed: saving
-                ? null
-                : () async {
-                    await guarded(
-                      context,
-                      () => context.read<CalendarProvider>().delete(
-                        widget.initial!.id,
-                      ),
-                    );
-                    if (context.mounted) {
-                      Navigator.pop(context);
-                    }
-                  },
-            child: const Text('Delete session'),
+          SwitchListTile(
+            title: const Text('Include a time'),
+            value: hasTime,
+            onChanged: (v) => setState(() => hasTime = v),
           ),
-      ],
+          if (hasTime)
+            ListTile(
+              title: const Text('Time'),
+              subtitle: Text(TimeOfDay.fromDateTime(date).format(context)),
+              onTap: () async {
+                final result = await showTimePicker(
+                  context: context,
+                  initialTime: TimeOfDay.fromDateTime(date),
+                );
+                if (result != null) {
+                  setState(
+                    () => date = DateTime(
+                      date.year,
+                      date.month,
+                      date.day,
+                      result.hour,
+                      result.minute,
+                    ),
+                  );
+                }
+              },
+            ),
+          TextField(
+            controller: notes,
+            maxLines: 4,
+            maxLength: 2000,
+            decoration: const InputDecoration(labelText: 'Session notes'),
+          ),
+          CheckboxListTile(
+            contentPadding: EdgeInsets.zero,
+            value: completed,
+            onChanged: (v) => setState(() => completed = v!),
+            title: const Text('Session completed'),
+            subtitle: const Text(
+              'This does not mark the whole game completed.',
+            ),
+          ),
+          if (error != null) Notice(error!),
+          FilledButton(
+            onPressed: saving ? null : save,
+            child: Text(saving ? 'Saving…' : 'Save session'),
+          ),
+          if (widget.initial != null)
+            TextButton(
+              onPressed: saving
+                  ? null
+                  : () async {
+                      await guarded(
+                        context,
+                        () => context.read<CalendarProvider>().delete(
+                          widget.initial!.id,
+                        ),
+                      );
+                      if (context.mounted) {
+                        Navigator.pop(context);
+                      }
+                    },
+              child: const Text('Delete session'),
+            ),
+        ],
+      ),
     ),
   );
 }

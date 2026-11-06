@@ -9,7 +9,7 @@ class SearchProvider extends ChangeNotifier {
   SearchProvider(this.repository);
   bool demo = true, loading = false, hasMore = false, stale = false;
   String query = '', sort = 'popular';
-  String? genre, platform, error;
+  String? genre, platform, error, notice;
   int? year;
   List<String> preferredPlatforms = [];
   static const myPlatforms = '@preferred';
@@ -54,6 +54,7 @@ class SearchProvider extends ChangeNotifier {
     _generation++;
     loading = true;
     error = null;
+    notice = null;
     games = [];
     hasMore = false;
     notifyListeners();
@@ -73,7 +74,7 @@ class SearchProvider extends ChangeNotifier {
     unawaited(search());
   }
 
-  Future<void> search({bool more = false}) async {
+  Future<void> search({bool more = false, bool forceRefresh = false}) async {
     if (more && (loading || !hasMore)) {
       return;
     }
@@ -84,6 +85,7 @@ class SearchProvider extends ChangeNotifier {
     final page = more ? _page + 1 : 0;
     loading = true;
     error = null;
+    notice = null;
     if (!more) {
       games = [];
       stale = false;
@@ -101,15 +103,13 @@ class SearchProvider extends ChangeNotifier {
         sort: sort,
         page: page,
         cancel: _cancel,
+        forceRefresh: forceRefresh,
       );
       if (generation != _generation) {
         return;
       }
-      final merged = <int, Game>{
-        for (final g in games) g.id: g,
-        for (final g in result.games) g.id: g,
-      };
-      games = merged.values.toList();
+      games = repository.deduplicate([...games, ...result.games]);
+      notice = result.notice;
       _page = page;
       hasMore = result.hasMore;
       stale = stale || result.stale;

@@ -16,6 +16,8 @@ class Game {
   final List<int> similar;
   final bool demo;
   final String source;
+  final List<String> fallbackImages;
+  final Map<String, String> provenance;
   const Game({
     required this.id,
     required this.title,
@@ -34,6 +36,8 @@ class Game {
     this.similar = const [],
     this.demo = false,
     this.source = 'igdb',
+    this.fallbackImages = const [],
+    this.provenance = const {},
   });
   String get key => '${demo ? 'demo' : source}:$id';
   factory Game.fromJson(Map<String, dynamic> j) => Game(
@@ -54,6 +58,10 @@ class Game {
     similar: (j['similar'] as List? ?? []).cast<int>(),
     demo: j['demo'] == true,
     source: j['source'] as String? ?? 'igdb',
+    fallbackImages: strings(j['fallbackImages']),
+    provenance: j['provenance'] is Map
+        ? Map<String, String>.from(j['provenance'] as Map)
+        : const {},
   );
   Map<String, dynamic> toJson() => {
     'id': id,
@@ -73,6 +81,8 @@ class Game {
     'similar': similar,
     'demo': demo,
     'source': source,
+    'fallbackImages': fallbackImages,
+    'provenance': provenance,
   };
   static List<String> strings(dynamic value) =>
       (value as List? ?? []).cast<String>();
@@ -195,7 +205,13 @@ class LibraryEntryAdapter extends TypeAdapter<LibraryEntry> {
 class CatalogResult {
   final List<Game> games;
   final bool hasMore, stale;
-  const CatalogResult(this.games, {this.hasMore = false, this.stale = false});
+  final String? notice;
+  const CatalogResult(
+    this.games, {
+    this.hasMore = false,
+    this.stale = false,
+    this.notice,
+  });
 }
 
 class CatalogFilters {

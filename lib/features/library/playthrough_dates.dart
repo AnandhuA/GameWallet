@@ -1,3 +1,4 @@
+import '../../shared/app_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/models.dart';
@@ -80,13 +81,11 @@ class _DatesState extends State<PlaythroughDatesDialog> {
       final value = first ? start : end;
       return Material(
         color: colors.surfaceContainerHighest.withValues(alpha: .55),
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: WalletRadius.row,
         child: ListTile(
           dense: true,
           minVerticalPadding: 8,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
-          ),
+          shape: RoundedRectangleBorder(borderRadius: WalletRadius.row),
           contentPadding: const EdgeInsets.only(left: 14, right: 4),
           leading: Icon(
             first ? Icons.play_circle_outline_rounded : Icons.flag_outlined,
@@ -134,130 +133,119 @@ class _DatesState extends State<PlaythroughDatesDialog> {
       );
     }
 
-    return Dialog(
-      insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
-      clipBehavior: Clip.antiAlias,
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 440),
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
+    return AppBottomSheet(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
             children: [
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: colors.primaryContainer,
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                    child: Icon(
-                      widget.completion
-                          ? Icons.task_alt_rounded
-                          : Icons.edit_calendar_outlined,
-                      color: colors.onPrimaryContainer,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      widget.completion ? 'Complete game' : 'Edit dates',
-                      style: theme.textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              dateField(true),
-              if (widget.initial.completed) ...[
-                const SizedBox(height: 8),
-                dateField(false),
-              ],
-              const SizedBox(height: 10),
               Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 10,
-                ),
+                padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: validDuration
-                      ? colors.primaryContainer.withValues(alpha: .5)
-                      : colors.surfaceContainerLow,
-                  borderRadius: BorderRadius.circular(14),
+                  color: colors.primaryContainer,
+                  borderRadius: WalletRadius.row,
                 ),
-                child: Row(
-                  children: [
-                    Icon(
-                      validDuration
-                          ? Icons.timelapse_rounded
-                          : Icons.info_outline_rounded,
-                      size: 22,
-                      color: colors.primary,
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            days == null
-                                ? 'Dates not recorded'
-                                : days < 1
-                                ? 'End date must follow start date'
-                                : widget.initial.completed
-                                ? 'Completed in $days ${days == 1 ? 'day' : 'days'}'
-                                : 'Day $days',
-                            style: theme.textTheme.titleSmall?.copyWith(
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              if (error != null)
-                Padding(
-                  padding: const EdgeInsets.only(top: 12),
-                  child: Text(error!, style: TextStyle(color: colors.error)),
-                ),
-              const SizedBox(height: 14),
-              FilledButton.icon(
-                style: FilledButton.styleFrom(
-                  minimumSize: const Size.fromHeight(48),
-                ),
-                onPressed: () => save(widget.completion),
-                icon: Icon(
+                child: Icon(
                   widget.completion
-                      ? Icons.rate_review_outlined
-                      : Icons.check_rounded,
-                  size: 20,
+                      ? Icons.task_alt_rounded
+                      : Icons.edit_calendar_outlined,
+                  color: colors.onPrimaryContainer,
                 ),
-                label: Text(widget.completion ? 'Add review' : 'Save dates'),
               ),
-              if (widget.completion) ...[
-                const SizedBox(height: 8),
-                OutlinedButton(
-                  style: OutlinedButton.styleFrom(
-                    minimumSize: const Size.fromHeight(48),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  widget.completion ? 'Complete game' : 'Edit dates',
+                  style: theme.textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.w700,
                   ),
-                  onPressed: () => save(false),
-                  child: const Text('Complete without review'),
                 ),
-              ],
-              const SizedBox(height: 4),
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('Cancel'),
               ),
             ],
           ),
-        ),
+          const SizedBox(height: 16),
+          dateField(true),
+          if (widget.initial.completed) ...[
+            const SizedBox(height: 8),
+            dateField(false),
+          ],
+          const SizedBox(height: 10),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            decoration: BoxDecoration(
+              color: validDuration
+                  ? colors.primaryContainer.withValues(alpha: .5)
+                  : colors.surfaceContainerLow,
+              borderRadius: WalletRadius.row,
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  validDuration
+                      ? Icons.timelapse_rounded
+                      : Icons.info_outline_rounded,
+                  size: 22,
+                  color: colors.primary,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        days == null
+                            ? 'Dates not recorded'
+                            : days < 1
+                            ? 'End date must follow start date'
+                            : widget.initial.completed
+                            ? 'Completed in $days ${days == 1 ? 'day' : 'days'}'
+                            : 'Day $days',
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          if (error != null)
+            Padding(
+              padding: const EdgeInsets.only(top: 12),
+              child: Text(error!, style: TextStyle(color: colors.error)),
+            ),
+          const SizedBox(height: 14),
+          FilledButton.icon(
+            style: FilledButton.styleFrom(
+              minimumSize: const Size.fromHeight(48),
+            ),
+            onPressed: () => save(widget.completion),
+            icon: Icon(
+              widget.completion
+                  ? Icons.rate_review_outlined
+                  : Icons.check_rounded,
+              size: 20,
+            ),
+            label: Text(widget.completion ? 'Add review' : 'Save dates'),
+          ),
+          if (widget.completion) ...[
+            const SizedBox(height: 8),
+            OutlinedButton(
+              style: OutlinedButton.styleFrom(
+                minimumSize: const Size.fromHeight(48),
+              ),
+              onPressed: () => save(false),
+              child: const Text('Complete without review'),
+            ),
+          ],
+          const SizedBox(height: 4),
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+        ],
       ),
     );
   }
@@ -281,7 +269,7 @@ Future<void> editPlaythroughDates(
                   id: 'legacy:${game.key}',
                   completed: library.hasPlayed(game),
                 ));
-  final choice = await showDialog<CompletionChoice>(
+  final choice = await showWalletSheet<CompletionChoice>(
     context: context,
     builder: (_) => PlaythroughDatesDialog(initial: initial),
   );

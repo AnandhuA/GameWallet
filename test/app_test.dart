@@ -47,6 +47,7 @@ class ControlledRepository extends GameRepository {
     String? platform,
     int? year,
     String sort = 'popular',
+    bool precise = false,
     int page = 0,
     CancelToken? cancel,
     bool forceRefresh = false,
@@ -216,6 +217,13 @@ void main() {
         fixture.lastRequest!.queryParameters.containsKey('ordering'),
         isFalse,
       );
+      await api.get('/games', {
+        'q': 'Fixture',
+        'sort': 'relevance',
+        'precise': true,
+      });
+      expect(fixture.lastRequest!.queryParameters['search_precise'], isTrue);
+      expect(fixture.lastRequest!.queryParameters['search_exact'], isTrue);
       await api.get('/games', {'q': 'Portal', 'sort': 'rating'});
       expect(fixture.lastRequest!.queryParameters['ordering'], '-rating');
       final provider = SearchProvider(ControlledRepository(storage));
@@ -570,7 +578,7 @@ void main() {
       await tester.longPress(find.text('Neon Outriders').last);
       await tester.pumpAndSettle();
       expect(find.text('Game actions'), findsOneWidget);
-      expect(find.text('Add to LineUp'), findsOneWidget);
+      expect(find.text('Add to LineUp'), findsNothing);
       await tester.tapAt(const Offset(5, 5));
       await tester.pumpAndSettle();
       await tester.ensureVisible(find.byTooltip('View style'));

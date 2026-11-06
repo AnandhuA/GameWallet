@@ -1,3 +1,4 @@
+import '../../shared/app_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/models.dart';
@@ -34,7 +35,7 @@ class _PricesBody extends StatelessWidget {
       child: DecoratedBox(
         decoration: BoxDecoration(
           color: colors.surfaceContainerLow,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: WalletRadius.card,
           border: Border.all(
             color: colors.outlineVariant.withValues(alpha: .5),
           ),
@@ -211,102 +212,97 @@ class _OfferRow extends StatelessWidget {
   const _OfferRow(this.offer, {required this.lowest, this.rate});
   @override
   Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
-    final text = Theme.of(context).textTheme;
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Material(
-        color: lowest ? colors.primaryContainer : colors.surface,
-        borderRadius: BorderRadius.circular(12),
-        clipBehavior: Clip.antiAlias,
-        child: InkWell(
-          onTap: () => openExternal(context, offer.url.toString()),
-          child: Padding(
-            padding: const EdgeInsets.all(12),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(
-                      child: Text(
-                        offer.storeName,
-                        style: text.titleSmall?.copyWith(
-                          color: lowest
-                              ? colors.onPrimaryContainer
-                              : colors.onSurface,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Icon(
-                      Icons.open_in_new,
-                      size: 17,
-                      color: lowest
-                          ? colors.onPrimaryContainer
-                          : colors.onSurfaceVariant,
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 5),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 4,
-                  crossAxisAlignment: WrapCrossAlignment.center,
-                  children: [
-                    Text(
-                      rate?.money(offer.cents) ?? StoreOffer.money(offer.cents),
-                      style: text.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: lowest
-                            ? colors.onPrimaryContainer
-                            : colors.onSurface,
-                      ),
-                    ),
-                    if (offer.discount != null) ...[
-                      Text(
-                        rate?.money(offer.retailCents!) ??
-                            StoreOffer.money(offer.retailCents!),
-                        style: text.bodySmall?.copyWith(
-                          decoration: TextDecoration.lineThrough,
-                          color: lowest
-                              ? colors.onPrimaryContainer
-                              : colors.onSurfaceVariant,
-                        ),
-                      ),
-                      Text(
-                        '-${offer.discount}%',
-                        style: text.labelMedium?.copyWith(
-                          color: lowest
-                              ? colors.onPrimaryContainer
-                              : colors.primary,
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-                if (rate != null)
-                  Text(
-                    '${StoreOffer.money(offer.cents)} · USD offer',
-                    style: text.bodySmall?.copyWith(
-                      color: lowest
-                          ? colors.onPrimaryContainer
-                          : colors.onSurfaceVariant,
-                    ),
-                  ),
-                if (lowest)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 5),
-                    child: Text(
-                      'Lowest among listed stores',
-                      style: text.labelSmall?.copyWith(
-                        color: colors.onPrimaryContainer,
-                      ),
-                    ),
-                  ),
-              ],
+    final colors = Theme.of(context).colorScheme,
+        text = Theme.of(context).textTheme;
+    final information = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(offer.storeName, style: text.titleSmall),
+        if (lowest)
+          Padding(
+            padding: const EdgeInsets.only(top: WalletSpace.xs),
+            child: Text(
+              'Lowest among listed stores',
+              style: text.labelSmall?.copyWith(color: colors.primary),
             ),
+          ),
+      ],
+    );
+    final price = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Wrap(
+          spacing: WalletSpace.sm,
+          runSpacing: WalletSpace.xs,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: [
+            Text(
+              rate?.money(offer.cents) ?? StoreOffer.money(offer.cents),
+              style: WalletTheme.moneyStyle(context),
+            ),
+            if (offer.discount != null) ...[
+              Text(
+                rate?.money(offer.retailCents!) ??
+                    StoreOffer.money(offer.retailCents!),
+                style: text.bodySmall?.copyWith(
+                  color: colors.onSurfaceVariant,
+                  decoration: TextDecoration.lineThrough,
+                ),
+              ),
+              Text(
+                '-${offer.discount}%',
+                style: text.labelMedium?.copyWith(color: colors.primary),
+              ),
+            ],
+          ],
+        ),
+        if (rate != null)
+          Text(
+            '${StoreOffer.money(offer.cents)} · USD offer',
+            style: text.bodySmall?.copyWith(color: colors.onSurfaceVariant),
+          ),
+      ],
+    );
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: WalletRadius.control,
+        onTap: () => openExternal(context, offer.url.toString()),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: WalletSpace.md),
+          child: LayoutBuilder(
+            builder: (context, box) {
+              final sideBySide =
+                  box.maxWidth >= 390 &&
+                  MediaQuery.textScalerOf(context).scale(14) <= 21;
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (sideBySide)
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(child: information),
+                        const SizedBox(width: WalletSpace.md),
+                        Expanded(child: price),
+                        const SizedBox(width: WalletSpace.sm),
+                        const Icon(Icons.open_in_new, size: 18),
+                      ],
+                    )
+                  else ...[
+                    Row(
+                      children: [
+                        Expanded(child: information),
+                        const Icon(Icons.open_in_new, size: 18),
+                      ],
+                    ),
+                    const SizedBox(height: WalletSpace.sm),
+                    price,
+                  ],
+                  const Divider(height: WalletSpace.md),
+                ],
+              );
+            },
           ),
         ),
       ),

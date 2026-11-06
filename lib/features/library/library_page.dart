@@ -1,3 +1,4 @@
+import '../../shared/app_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/models.dart';
@@ -73,7 +74,9 @@ class _LibraryPageState extends State<LibraryPage> {
               children: [
                 CircleAvatar(
                   radius: 24,
-                  backgroundColor: Color(0xFF10343D),
+                  backgroundColor: Theme.of(
+                    context,
+                  ).colorScheme.surfaceContainerHigh,
                   child: Icon(
                     Icons.playlist_add_check,
                     color: Theme.of(context).colorScheme.primary,
@@ -151,7 +154,7 @@ class _LibraryPageState extends State<LibraryPage> {
                     width: 64,
                     height: 82,
                     child: ClipRRect(
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: WalletRadius.control,
                       child: GameArt(e.game),
                     ),
                   ),

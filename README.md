@@ -6,7 +6,17 @@
 
 Game Wallet is a Flutter game discovery and personal library app for PC, console, Android, and iOS games. Find something new, organize your backlog, track playthroughs, and keep your gaming memories in one place.
 
-Built with **Flutter, Dart, Provider, Hive Community Edition, and Dio**. Live discovery connects directly to **RAWG**—no backend, account, or cloud service is required.
+Built with **Flutter, Dart, Provider, Hive Community Edition, and Dio**. Live discovery uses **RAWG** with **FreeToGame** as a supplementary free-to-play PC/browser catalog. No backend, account or cloud service is required.
+
+## Interface
+
+The interface follows the supplied Game Wallet HTML reference: compact layouts, artwork-backed Playing cards, clean poster grids, adaptive sheets and a shared dark/light theme. Bricolage Grotesque and Figtree are bundled locally under their SIL Open Font Licenses. Teal is the default accent; existing saved accent choices remain intact.
+
+**Settings → Appearance → Pure black** enables an AMOLED-style theme with black backgrounds and subtle near-black cards. The choice is saved locally and keeps your accent color. System, Light and Dark remain available.
+
+<img src="docs/previews/redesign-my-games-phone.png" width="220" alt="My games with fictional demo data"> <img src="docs/previews/redesign-explore-phone.png" width="220" alt="Explore with fictional demo data"> <img src="docs/previews/redesign-profile-light-phone.png" width="220" alt="Local profile in light mode with fixture data">
+
+See the [design system and component guide](docs/design-system.md), [phone/desktop previews](docs/redesign-previews.md), and [verification notes](VERIFICATION.md). The preview images use isolated fictional fixtures and contain no API credentials or personal data.
 
 ## Features
 
@@ -32,10 +42,10 @@ Built with **Flutter, Dart, Provider, Hive Community Edition, and Dio**. Live di
 
 ### More than a backlog
 
-- **LineUp:** create, reorder, and favorite custom game lists; follow completion progress and clone curated starter lists.
+- **Deals:** browse recent recorded Epic giveaways and searchable history, with PC/Android/iOS filters and external Epic store links. Records are historical, not verified current free offers.
 - **Journal:** record playthrough reviews, optional half-star ratings, reactions, tags, notes, favorite moments, quotes, and recommendations.
 - **Play calendar:** plan local sessions with optional times and notes. Completing a session does not automatically complete a game.
-- **Spin wheel:** choose your next game from discovery, saved games, favorites, or a LineUp.
+- **Spin wheel:** choose your next game from discovery, saved games, or favorites.
 - **Smart Pick:** get a choice using transparent local platform, genre, mood, and status rules.
 - **Profile and statistics:** view real collection counts, review ratings, and genre/platform breakdowns.
 - **Appearance:** dark, light, and system themes, editable accent colors, responsive desktop navigation, keyboard access, and text scaling.
@@ -46,7 +56,7 @@ Built with **Flutter, Dart, Provider, Hive Community Edition, and Dio**. Live di
 
 - Flutter compatible with the project's Dart `^3.10.0` constraint. The project has been developed with Flutter **3.38.1 / Dart 3.10.0**.
 - Platform tooling for your target: Android SDK, a browser, Visual Studio C++ tooling for Windows, or macOS/Xcode for iOS.
-- A RAWG API key for live discovery. The clearly labeled fictional demo works without a key.
+- A RAWG API key for full live discovery. FreeToGame supplementary PC/browser coverage needs no key. The clearly labeled fictional demo works without a key.
 
 Clone or download this repository, open its root directory, then run:
 
@@ -87,7 +97,7 @@ Without a key, Game Wallet starts with **fictional sample games**, clearly label
 
 ## Offline storage and caching
 
-Your library, favorites, preferences, journals, LineUps, plans, and playthrough dates stay on the device and remain available offline.
+Your library, favorites, preferences, journals, preserved legacy lists, plans, and playthrough dates stay on the device and remain available offline.
 
 | Cache | Default limits | Behavior |
 | --- | --- | --- |
@@ -108,7 +118,7 @@ An unambiguous matching title/edition is selected automatically. Otherwise, choo
 
 Offers show their last-check time. Refresh checks the provider again, subject to rate limits; offline fallback is marked **Outdated prices** and loses its lowest-price badge. **Clear game data** also clears store prices and cached listing matches without deleting personal data. The app coalesces overlapping requests, cancels abandoned requests, and honors `Retry-After` responses.
 
-Purchase actions use CheapShark's required redirect links, including its tracking parameters. Attribution links back to CheapShark. There are no deals feeds, giveaway feeds, background price polling, notifications, or verified Indian store-price comparisons in this release. Browser access depends on the providers' CORS support; native checkout/device installation are separate from API tests.
+Purchase actions use CheapShark's required redirect links, including its tracking parameters. Attribution links back to CheapShark. Deals currently contains a separate historical Epic giveaway feed; there are no live sale feeds, background price polling, notifications, or verified Indian store-price comparisons in this release. Browser access depends on the providers' CORS support; native checkout/device installation are separate from API tests.
 
 To change metadata cache expiry:
 
@@ -131,7 +141,7 @@ Playthrough durations count **calendar dates inclusively**, not hours played: st
 ```text
 lib/
   core/        Models, API access, repositories, Hive storage, and caches
-  features/    Discovery, details, library, journal, LineUp, calendar, pick,
+  features/    Discovery, details, library, journal, deals, calendar, pick,
                profile, settings, and pricing with focused providers
   shared/      Responsive navigation, cards, cached images, and UI components
 test/          Persistence, provider, cache, API, and widget tests
@@ -147,7 +157,7 @@ Widgets delegate network and storage work to providers and repositories. Search 
 
 The display name is **Game Wallet**. The existing Dart package name (`game_atlas`) and platform application IDs are retained for compatibility with existing installations and saved data.
 
-Stable IDs preserve catalog identity: `rawg:`, legacy `igdb:`, and `demo:`. Existing migrations retain saved records, completion history, and imported reviews. Hive adapters are hand-written; no adapter generation step is required.
+Stable IDs preserve catalog identity: `rawg:`, `freetogame:`, legacy `igdb:`, and `demo:`. Existing migrations retain saved records, completion history, and imported reviews. Hive adapters are hand-written; no adapter generation step is required.
 
 The obsolete IGDB backend source has been removed. Any retained ignored local configuration under `backend/` is unused and is never bundled into the app.
 
@@ -215,3 +225,43 @@ pwsh -File tools/generate_icons.ps1
 ```
 
 Rebuild the app to update the installed launcher icon; hot reload does not replace native icons. Browsers and launchers may keep a cached icon until refreshed.
+
+## Deals data
+
+Navigation is **Home · Explore · My games · Deals · Profile**, with My games selected at launch. Deals loads only when opened and needs no API key.
+
+Giveaway records come directly from [josephmate/EpicFreeGamesList](https://github.com/josephmate/EpicFreeGamesList), using its published `epic_free_games.json`. This community-maintained history provides recorded dates, platforms, store links and optional ratings; it does not itself provide artwork, current prices or offer end dates. **Check on Epic** opens the store externally to verify availability and regional eligibility. No current-free claims or deadlines are inferred. Cards now include artwork when available and open an in-app Deal details page. Valid feed-supplied Steam app links provide Steam artwork; otherwise your configured RAWG key can resolve a unique exact title/platform match. Ambiguous listings require selection on the details page. Without a key or usable match, giveaway details remain available with a placeholder.
+
+Records cache for one hour in the existing bounded game-data cache. Pull to refresh or use Refresh; failed refreshes retain labeled outdated records. Clear game data / Clear all cache includes this feed and preserves personal data. LineUp entry points have been removed; previously saved lists remain stored for compatibility. No updater code from the upstream repository is bundled.
+
+Verify the public giveaway feed separately from fixture tests (network required):
+
+```powershell
+flutter test test/deals_test.dart --dart-define=DEALS_LIVE=true --plain-name="live Epic giveaway feed smoke check"
+```
+
+Deals artwork troubleshooting: Refresh Deals retries failed artwork and catalog lookups. Older feed caches are refreshed automatically to recover Steam links while remaining usable offline. Artwork searches use precise RAWG matching; missing or ambiguous records still require a configured RAWG key or manual selection in details. No unrelated cover is substituted.
+
+## Multiple catalog sources
+
+RAWG remains the main PC/console/mobile catalog. [FreeToGame](https://www.freetogame.com/api-doc) adds free-to-play PC/browser discovery, details, descriptions, artwork and screenshots without another API key. Its coverage does not replace RAWG for console or mobile games. Demo mode remains fictional and never silently substitutes live catalogs.
+
+Home includes a Free-to-play shelf and supplementary recommendations. Popular and Top rated retain RAWG ordering; no FreeToGame ratings or comparable popularity scores are invented. Explore searches both available catalogs and preserves title relevance, mapped filters and source-safe paging. FreeToGame entries follow RAWG for popularity sorting with a visible explanation. Unsupported filter mappings omit supplementary results rather than ignoring the filter.
+
+Matching requires an exact normalized title/edition plus a shared official game URL or compatible release year and developer/publisher. Confirmed matches produce one card. Ambiguous same-title secondary entries stay out of the main grid and can be reviewed under **Other catalog matches** in details. Sequels, remasters, editions and different games sharing numeric IDs remain distinct.
+
+Confirmed links are personal `catalog-link:` records, separate from disposable API cache. Linking never moves or deletes saved IDs, journals, plans or playthroughs. Library actions and review lookup resolve confirmed aliases; Playing/Completed/Hidden exclusions apply across them. RAWG fields stay primary; confirmed FreeToGame matches supplement missing fields and artwork, with attribution.
+
+`core/freetogame_service.dart` owns FreeToGame API access and bounded source caching. `core/federated_game_repository.dart` combines catalogs behind GameRepository. `core/catalog_identity.dart` handles confirmed links. Game JSON adds optional provenance and fallback-image fields; older records remain readable with the existing hand-written Hive adapter. No code generation is required.
+
+Caches use the existing configurable metadata expiry and 200-entry budget. Requests deduplicate and cancel obsolete readers; FreeToGame allows two concurrent downloads and spaces starts by 125ms. Supplementary paging holds a query snapshot until a fresh search. Clear game data preserves personal identity links and user records.
+
+A failed provider leaves successful or cached data available with a partial-results notice. **Refresh sources** retries Explore providers. On web, FreeToGame may be blocked by CORS; RAWG and available cached results remain usable. No proxy, RapidAPI account or additional paid service is configured.
+
+Opt-in live verification (no RAWG credentials required):
+
+```powershell
+flutter test test/multisource_test.dart --dart-define=FREETOGAME_LIVE=true --plain-name="live FreeToGame smoke check"
+```
+
+This checks the public list, one detail response and decoding of one returned cover through the image cache. It does not verify live RAWG matching, browser CORS access or every catalog image.

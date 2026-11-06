@@ -1,3 +1,4 @@
+import '../../shared/app_theme.dart';
 import '../../shared/grid_density_button.dart';
 import '../settings/settings_provider.dart';
 import '../library/library_provider.dart';
@@ -75,7 +76,7 @@ class _ExplorePageState extends State<ExplorePage> {
                   Text(
                     'Explore',
                     style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.w800,
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
                   const SizedBox(height: 4),
@@ -122,11 +123,11 @@ class _ExplorePageState extends State<ExplorePage> {
                   filled: true,
                   fillColor: colors.surfaceContainerLow,
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(16),
+                    borderRadius: WalletRadius.card,
                     borderSide: BorderSide.none,
                   ),
                   enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(16),
+                    borderRadius: WalletRadius.card,
                     borderSide: BorderSide.none,
                   ),
                   suffixIcon: p.query.isEmpty
@@ -146,11 +147,9 @@ class _ExplorePageState extends State<ExplorePage> {
                   : 'Filter games ($filterCount active)',
               style: IconButton.styleFrom(
                 minimumSize: const Size(52, 52),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                ),
+                shape: RoundedRectangleBorder(borderRadius: WalletRadius.card),
               ),
-              onPressed: () => showModalBottomSheet<void>(
+              onPressed: () => showWalletSheet<void>(
                 context: context,
                 isScrollControlled: true,
                 showDragHandle: true,
@@ -257,6 +256,34 @@ class _ExplorePageState extends State<ExplorePage> {
           ],
         ),
         const SizedBox(height: 6),
+        if (p.notice != null)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(p.notice!),
+                TextButton(
+                  onPressed: () => p.search(forceRefresh: true),
+                  child: const Text('Refresh sources'),
+                ),
+              ],
+            ),
+          ),
+        if (!p.demo)
+          Wrap(
+            children: [
+              TextButton(
+                onPressed: () => openExternal(context, 'https://rawg.io/'),
+                child: const Text('RAWG'),
+              ),
+              TextButton(
+                onPressed: () =>
+                    openExternal(context, 'https://www.freetogame.com/'),
+                child: const Text('FreeToGame'),
+              ),
+            ],
+          ),
         if (p.stale)
           const Notice(
             'Offline or service unavailable · cached results may be outdated.',
@@ -331,7 +358,7 @@ class _ExploreFiltersState extends State<_ExploreFilters> {
       isExpanded: true,
       decoration: InputDecoration(
         labelText: label,
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+        border: OutlineInputBorder(borderRadius: WalletRadius.control),
       ),
       items: [
         const DropdownMenuItem<String>(value: null, child: Text('All')),

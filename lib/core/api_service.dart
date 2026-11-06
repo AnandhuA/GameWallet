@@ -114,6 +114,10 @@ class ApiService {
               ? '-rating'
               : '-added',
         if (search.isNotEmpty) 'search': search,
+        if (search.isNotEmpty && query['precise'] == true) ...{
+          'search_precise': true,
+          'search_exact': true,
+        },
         'genres': ?query['genre'],
         'platforms': ?query['platform'],
         if (year != null)

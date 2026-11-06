@@ -1,3 +1,4 @@
+import '../../shared/app_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/models.dart';
@@ -118,31 +119,26 @@ class ProfilePage extends StatelessWidget {
         .length;
     Widget stat(String label, int value, IconData icon, VoidCallback action) =>
         Expanded(
-          child: Card(
-            margin: EdgeInsets.zero,
-            child: InkWell(
-              borderRadius: BorderRadius.circular(12),
-              onTap: action,
-              child: Padding(
-                padding: const EdgeInsets.all(13),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Icon(
-                      icon,
-                      color: Theme.of(context).colorScheme.primary,
-                      size: 22,
+          child: InkWell(
+            borderRadius: WalletRadius.row,
+            onTap: action,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 16),
+              child: Column(
+                children: [
+                  Text(
+                    '$value',
+                    style: Theme.of(context).textTheme.headlineSmall,
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    label,
+                    textAlign: TextAlign.center,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
-                    const SizedBox(height: 12),
-                    Text(
-                      '$value',
-                      style: Theme.of(context).textTheme.headlineSmall
-                          ?.copyWith(fontWeight: FontWeight.w800),
-                    ),
-                    const SizedBox(height: 3),
-                    Text(label, style: Theme.of(context).textTheme.labelMedium),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
           ),
@@ -156,7 +152,8 @@ class ProfilePage extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: 8),
       child: ListTile(
         contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-        leading: Icon(icon, size: 25),
+        tileColor: Theme.of(context).colorScheme.surfaceContainerLow,
+        leading: Icon(icon, size: 22),
         title: Text(title),
         subtitle: subtitle == null ? null : Text(subtitle),
         trailing: Icon(Icons.chevron_right),
@@ -182,7 +179,7 @@ class ProfilePage extends StatelessWidget {
             ),
           ],
         ),
-        const SizedBox(height: 28),
+        const SizedBox(height: 12),
         Card(
           margin: EdgeInsets.zero,
           child: Padding(
@@ -192,8 +189,15 @@ class ProfilePage extends StatelessWidget {
                 CircleAvatar(
                   radius: 30,
                   backgroundColor: Theme.of(context).colorScheme.primary,
-                  foregroundColor: Colors.white,
-                  child: Icon(Icons.person, size: 30),
+                  foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                  child: Text(
+                    settings.displayName.isEmpty
+                        ? 'P'
+                        : settings.displayName.substring(0, 1).toUpperCase(),
+                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                      color: Theme.of(context).colorScheme.onPrimary,
+                    ),
+                  ),
                 ),
                 const SizedBox(width: 16),
                 Expanded(
@@ -203,7 +207,7 @@ class ProfilePage extends StatelessWidget {
                       Text(
                         settings.displayName,
                         style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.w800,
+                          fontWeight: FontWeight.w700,
                         ),
                       ),
                       const SizedBox(height: 5),
@@ -221,35 +225,37 @@ class ProfilePage extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 16),
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            stat(
-              'Want to play',
-              want,
-              Icons.bookmark_border,
-              () => library(context, status: LibraryStatus.wantToPlay),
-            ),
-            const SizedBox(width: 8),
-            stat(
-              'Journal',
-              notes,
-              Icons.edit_note,
-              () => Navigator.push(
-                context,
-                MaterialPageRoute<void>(builder: (_) => const JournalPage()),
+        Card(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              stat(
+                'Want to play',
+                want,
+                Icons.bookmark_border,
+                () => library(context, status: LibraryStatus.wantToPlay),
               ),
-            ),
-            const SizedBox(width: 8),
-            stat(
-              'Completed',
-              completed,
-              Icons.task_alt,
-              () => library(context, status: LibraryStatus.completed),
-            ),
-          ],
+              const SizedBox(width: 8),
+              stat(
+                'Journal',
+                notes,
+                Icons.edit_note,
+                () => Navigator.push(
+                  context,
+                  MaterialPageRoute<void>(builder: (_) => const JournalPage()),
+                ),
+              ),
+              const SizedBox(width: 8),
+              stat(
+                'Completed',
+                completed,
+                Icons.task_alt,
+                () => library(context, status: LibraryStatus.completed),
+              ),
+            ],
+          ),
         ),
-        const SizedBox(height: 24),
+        const SizedBox(height: 16),
         menu(
           Icons.casino_outlined,
           'Spin wheel',
@@ -331,7 +337,7 @@ class ProfilePage extends StatelessWidget {
           () => info(
             context,
             'Game Wallet',
-            'Discover your next game across PC, console, Android and iOS.\n\nLive data and artwork: RAWG.\nLocal library: Hive.\nNo backend or account required for your personal collection.\n\nDemo content is fictional.',
+            'Discover your next game across PC, console, Android and iOS.\n\nGame catalogs: RAWG and FreeToGame. Linked Steam artwork is used for Deals when available.\nLocal library: Hive.\nNo backend or account required for your personal collection.\n\nDemo content is fictional.',
           ),
         ),
         menu(
@@ -341,7 +347,7 @@ class ProfilePage extends StatelessWidget {
           () => info(
             context,
             'Privacy & local data',
-            'Your display name, library, notes, ratings, preferences and RAWG key are stored on this device. Game Wallet does not operate a backend or sync service.\n\nDiscovery searches and your API key are sent directly to RAWG; images load from their providers. Opening an external link visits that provider.\n\nClearing app storage deletes local data. Clearing API cache in Settings preserves your library.',
+            'Your display name, library, notes, ratings, preferences and RAWG key are stored on this device. There is no account or cloud backup. Game Wallet does not operate a backend or sync service.\n\nDiscovery searches and your API key are sent directly to RAWG. Free-to-play catalog requests go directly to FreeToGame without your RAWG key; images load from their providers. Store offers are requested from CheapShark and conversion rates from Frankfurter. Giveaway records are downloaded from the EpicFreeGamesList repository on GitHub when opening Deals. Opening an external link visits that provider.\n\nClearing app storage deletes local data. Clearing API cache in Settings preserves your library.',
           ),
         ),
       ],

@@ -13,15 +13,6 @@ class StatisticsPage extends StatelessWidget {
     final library = context.watch<LibraryProvider>();
     final games = library.entries(demo);
     final journal = context.watch<JournalProvider>().entries(demo);
-    final lineups = context.watch<LineUpProvider>();
-    final complete = lineups
-        .entries(demo)
-        .where(
-          (l) =>
-              l.games.isNotEmpty &&
-              lineups.completed(l, library) == l.games.length,
-        )
-        .length;
     final ratings = journal.map((e) => e.rating).whereType<double>().toList();
     final counts = {
       'Saved games': '${games.length}',
@@ -32,7 +23,6 @@ class StatisticsPage extends StatelessWidget {
       'Completed':
           '${games.where((e) => e.status == LibraryStatus.completed).length}',
       'Journal entries': '${journal.length}',
-      'LineUps completed': '$complete',
       'Average review rating': ratings.isEmpty
           ? '—'
           : '${(ratings.reduce((a, b) => a + b) / ratings.length).toStringAsFixed(1)} / 5',

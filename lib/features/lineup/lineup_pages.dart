@@ -1,3 +1,4 @@
+import '../../shared/app_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/companion_models.dart';
@@ -126,45 +127,79 @@ class _LineUpPageState extends State<LineUpPage> {
             ),
           for (final list in lists)
             Card(
-              child: ListTile(
-                contentPadding: const EdgeInsets.all(16),
-                leading: CircleAvatar(
-                  radius: 26,
-                  backgroundColor: Color(list.color),
-                  child: const Icon(Icons.sports_esports, color: Colors.white),
-                ),
-                title: Text(
-                  list.title,
-                  style: const TextStyle(fontWeight: FontWeight.bold),
-                ),
-                subtitle: Text(
-                  '${list.starter ? 'Curated starter' : 'Custom LineUp'} · ${p.completed(list, library)}/${list.games.length} completed',
-                ),
-                trailing: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    IconButton(
-                      tooltip: 'Favorite ${list.title}',
-                      onPressed: () => guarded(
-                        context,
-                        () => p.save(list.copy(favorite: !list.favorite)),
-                      ),
-                      icon: Icon(
-                        list.favorite ? Icons.favorite : Icons.favorite_border,
-                        color: list.favorite
-                            ? Theme.of(context).colorScheme.primary
-                            : null,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  ListTile(
+                    contentPadding: const EdgeInsets.all(16),
+                    leading: list.games.isEmpty
+                        ? CircleAvatar(
+                            radius: 26,
+                            backgroundColor: Color(list.color),
+                            child: const Icon(
+                              Icons.sports_esports,
+                              color: Colors.white,
+                            ),
+                          )
+                        : SizedBox(
+                            width: 44,
+                            child: GameCover(
+                              list.games
+                                      .where(
+                                        (game) => game.key == list.coverKey,
+                                      )
+                                      .firstOrNull ??
+                                  list.games.first,
+                            ),
+                          ),
+                    title: Text(
+                      list.title,
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    subtitle: Text(
+                      '${list.starter ? 'Game Wallet curated' : 'Custom LineUp'} · ${p.completed(list, library)}/${list.games.length} completed',
+                    ),
+                    trailing: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        IconButton(
+                          tooltip: 'Favorite ${list.title}',
+                          onPressed: () => guarded(
+                            context,
+                            () => p.save(list.copy(favorite: !list.favorite)),
+                          ),
+                          icon: Icon(
+                            list.favorite
+                                ? Icons.favorite
+                                : Icons.favorite_border,
+                            color: list.favorite
+                                ? Theme.of(context).colorScheme.primary
+                                : null,
+                          ),
+                        ),
+                        const Icon(Icons.chevron_right),
+                      ],
+                    ),
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute<void>(
+                        builder: (_) => LineUpDetail(id: list.id),
                       ),
                     ),
-                    const Icon(Icons.chevron_right),
-                  ],
-                ),
-                onTap: () => Navigator.push(
-                  context,
-                  MaterialPageRoute<void>(
-                    builder: (_) => LineUpDetail(id: list.id),
                   ),
-                ),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                    child: ClipRRect(
+                      borderRadius: WalletRadius.control,
+                      child: LinearProgressIndicator(
+                        minHeight: 5,
+                        value: list.games.isEmpty
+                            ? 0
+                            : p.completed(list, library) / list.games.length,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
         ],
@@ -211,7 +246,7 @@ class LineUpDetail extends StatelessWidget {
                 CatalogSourceLabel(demo: list.demo),
                 if (list.games.isNotEmpty)
                   ClipRRect(
-                    borderRadius: BorderRadius.circular(14),
+                    borderRadius: WalletRadius.row,
                     child: SizedBox(
                       height: 180,
                       child: GameArt(
@@ -328,141 +363,145 @@ class _LineUpEditorState extends State<LineUpEditor> {
         TextButton(onPressed: saving ? null : save, child: const Text('Save')),
       ],
     ),
-    body: ListView(
-      padding: const EdgeInsets.all(16),
-      children: [
-        TextField(
-          controller: title,
-          maxLength: 80,
-          decoration: const InputDecoration(labelText: 'LineUp name'),
-        ),
-        const SizedBox(height: 12),
-        TextField(
-          controller: description,
-          maxLength: 1000,
-          maxLines: 3,
-          decoration: const InputDecoration(labelText: 'Description'),
-        ),
-        const SizedBox(height: 16),
-        Wrap(
-          spacing: 8,
-          children: [0xFF06B6D4, 0xFF8B5CF6, 0xFF1DB954, 0xFFE53935, 0xFFFFB020]
-              .map(
-                (c) => IconButton.filled(
-                  tooltip: 'Choose color',
-                  style: IconButton.styleFrom(backgroundColor: Color(c)),
-                  onPressed: () => setState(() => color = c),
-                  icon: Icon(
-                    c == color ? Icons.check : Icons.circle_outlined,
-                    color: Colors.white,
-                  ),
-                ),
-              )
-              .toList(),
-        ),
-        const SizedBox(height: 16),
-        if (games.isNotEmpty)
-          DropdownButtonFormField<String>(
-            key: ValueKey('${games.map((g) => g.key).join(',')}:$coverKey'),
-            initialValue: games.any((g) => g.key == coverKey)
-                ? coverKey
-                : games.first.key,
-            isExpanded: true,
-            decoration: const InputDecoration(labelText: 'Cover artwork'),
-            items: games
-                .map(
-                  (g) => DropdownMenuItem(
-                    value: g.key,
-                    child: Text(g.title, overflow: TextOverflow.ellipsis),
-                  ),
-                )
-                .toList(),
-            onChanged: (v) => setState(() => coverKey = v),
+    body: WalletViewport(
+      form: true,
+      child: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          TextField(
+            controller: title,
+            maxLength: 80,
+            decoration: const InputDecoration(labelText: 'LineUp name'),
           ),
-        const SizedBox(height: 16),
-        OutlinedButton.icon(
-          onPressed: saving
-              ? null
-              : () async {
-                  final game = await selectGame(context);
-                  if (game != null &&
-                      mounted &&
-                      !games.any((g) => g.key == game.key)) {
-                    setState(() => games.add(game));
-                  }
-                },
-          icon: const Icon(Icons.add),
-          label: const Text('Add game'),
-        ),
-        ReorderableListView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          itemCount: games.length,
-          onReorder: (from, to) => setState(() {
-            if (to > from) {
-              to--;
-            }
-            games.insert(to, games.removeAt(from));
-          }),
-          itemBuilder: (context, i) => ListTile(
-            key: ValueKey(games[i].key),
-            title: Text(games[i].title),
-            leading: ReorderableDragStartListener(
-              index: i,
-              child: const Icon(Icons.drag_handle),
-            ),
-            trailing: IconButton(
-              tooltip: 'Remove ${games[i].title}',
-              onPressed: () => setState(() => games.removeAt(i)),
-              icon: const Icon(Icons.close),
-            ),
+          const SizedBox(height: 12),
+          TextField(
+            controller: description,
+            maxLength: 1000,
+            maxLines: 3,
+            decoration: const InputDecoration(labelText: 'Description'),
           ),
-        ),
-        if (error != null) Notice(error!),
-        const SizedBox(height: 16),
-        FilledButton(
-          onPressed: saving ? null : save,
-          child: const Text('Save LineUp'),
-        ),
-        if (widget.initial != null && !widget.initial!.starter)
-          TextButton(
+          const SizedBox(height: 16),
+          Wrap(
+            spacing: 8,
+            children:
+                [0xFF06B6D4, 0xFF8B5CF6, 0xFF1DB954, 0xFFE53935, 0xFFFFB020]
+                    .map(
+                      (c) => IconButton.filled(
+                        tooltip: 'Choose color',
+                        style: IconButton.styleFrom(backgroundColor: Color(c)),
+                        onPressed: () => setState(() => color = c),
+                        icon: Icon(
+                          c == color ? Icons.check : Icons.circle_outlined,
+                          color: Colors.white,
+                        ),
+                      ),
+                    )
+                    .toList(),
+          ),
+          const SizedBox(height: 16),
+          if (games.isNotEmpty)
+            DropdownButtonFormField<String>(
+              key: ValueKey('${games.map((g) => g.key).join(',')}:$coverKey'),
+              initialValue: games.any((g) => g.key == coverKey)
+                  ? coverKey
+                  : games.first.key,
+              isExpanded: true,
+              decoration: const InputDecoration(labelText: 'Cover artwork'),
+              items: games
+                  .map(
+                    (g) => DropdownMenuItem(
+                      value: g.key,
+                      child: Text(g.title, overflow: TextOverflow.ellipsis),
+                    ),
+                  )
+                  .toList(),
+              onChanged: (v) => setState(() => coverKey = v),
+            ),
+          const SizedBox(height: 16),
+          OutlinedButton.icon(
             onPressed: saving
                 ? null
                 : () async {
-                    final yes = await showDialog<bool>(
-                      context: context,
-                      builder: (_) => AlertDialog(
-                        title: const Text('Delete this LineUp?'),
-                        content: const Text(
-                          'Saved games and journal entries will remain.',
-                        ),
-                        actions: [
-                          TextButton(
-                            onPressed: () => Navigator.pop(context, false),
-                            child: const Text('Cancel'),
-                          ),
-                          FilledButton(
-                            onPressed: () => Navigator.pop(context, true),
-                            child: const Text('Delete'),
-                          ),
-                        ],
-                      ),
-                    );
-                    if (yes == true && context.mounted) {
-                      await guarded(
-                        context,
-                        () => context.read<LineUpProvider>().delete(
-                          widget.initial!.id,
-                        ),
-                      );
-                      if (context.mounted) {
-                        Navigator.pop(context);
-                      }
+                    final game = await selectGame(context);
+                    if (game != null &&
+                        mounted &&
+                        !games.any((g) => g.key == game.key)) {
+                      setState(() => games.add(game));
                     }
                   },
-            child: const Text('Delete LineUp'),
+            icon: const Icon(Icons.add),
+            label: const Text('Add game'),
           ),
-      ],
+          ReorderableListView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: games.length,
+            onReorder: (from, to) => setState(() {
+              if (to > from) {
+                to--;
+              }
+              games.insert(to, games.removeAt(from));
+            }),
+            itemBuilder: (context, i) => ListTile(
+              key: ValueKey(games[i].key),
+              title: Text(games[i].title),
+              leading: ReorderableDragStartListener(
+                index: i,
+                child: const Icon(Icons.drag_handle),
+              ),
+              trailing: IconButton(
+                tooltip: 'Remove ${games[i].title}',
+                onPressed: () => setState(() => games.removeAt(i)),
+                icon: const Icon(Icons.close),
+              ),
+            ),
+          ),
+          if (error != null) Notice(error!),
+          const SizedBox(height: 16),
+          FilledButton(
+            onPressed: saving ? null : save,
+            child: const Text('Save LineUp'),
+          ),
+          if (widget.initial != null && !widget.initial!.starter)
+            TextButton(
+              onPressed: saving
+                  ? null
+                  : () async {
+                      final yes = await showDialog<bool>(
+                        context: context,
+                        builder: (_) => AlertDialog(
+                          title: const Text('Delete this LineUp?'),
+                          content: const Text(
+                            'Saved games and journal entries will remain.',
+                          ),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.pop(context, false),
+                              child: const Text('Cancel'),
+                            ),
+                            FilledButton(
+                              onPressed: () => Navigator.pop(context, true),
+                              child: const Text('Delete'),
+                            ),
+                          ],
+                        ),
+                      );
+                      if (yes == true && context.mounted) {
+                        await guarded(
+                          context,
+                          () => context.read<LineUpProvider>().delete(
+                            widget.initial!.id,
+                          ),
+                        );
+                        if (context.mounted) {
+                          Navigator.pop(context);
+                        }
+                      }
+                    },
+              child: const Text('Delete LineUp'),
+            ),
+        ],
+      ),
     ),
   );
 }

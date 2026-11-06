@@ -1,3 +1,4 @@
+import 'wallet_components.dart';
 import '../features/settings/preferences_page.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -5,7 +6,8 @@ import '../features/explore/explore_page.dart';
 import '../features/explore/search_provider.dart';
 import '../features/home/home_page.dart';
 import '../features/home/home_provider.dart';
-import '../features/lineup/lineup_pages.dart';
+import '../features/deals/deals_page.dart';
+import '../features/deals/deals_provider.dart';
 import '../features/pick/smart_pick_page.dart';
 import '../features/profile/profile_page.dart';
 import '../features/library/play_tracking_page.dart';
@@ -21,7 +23,7 @@ void openSettings(BuildContext context) => Navigator.of(context).push(
   ),
 );
 
-enum AppDestination { home, explore, myGames, lineup, profile }
+enum AppDestination { home, explore, myGames, deals, profile }
 
 class AppShell extends StatefulWidget {
   const AppShell({super.key});
@@ -33,19 +35,19 @@ class _AppShellState extends State<AppShell> {
   int selected = AppDestination.myGames.index;
   bool onboardingOpened = false;
   String? configuration;
-  static const labels = ['Home', 'Explore', 'My games', 'LineUp', 'Profile'];
+  static const labels = ['Home', 'Explore', 'My games', 'Deals', 'Profile'];
   static const icons = [
     Icons.home_outlined,
     Icons.auto_awesome_outlined,
     Icons.sports_esports_outlined,
-    Icons.view_list_outlined,
+    Icons.local_offer_outlined,
     Icons.person_outline,
   ];
   static const selectedIcons = [
     Icons.home,
     Icons.auto_awesome,
     Icons.sports_esports,
-    Icons.view_list,
+    Icons.local_offer,
     Icons.person,
   ];
   @override
@@ -82,6 +84,13 @@ class _AppShellState extends State<AppShell> {
     }
   }
 
+  void selectDestination(int index) {
+    setState(() => selected = index);
+    if (index == AppDestination.deals.index) {
+      context.read<DealsProvider>().load();
+    }
+  }
+
   void browse({String? genre, String? platform}) {
     final search = context.read<SearchProvider>();
     search.apply(
@@ -113,7 +122,7 @@ class _AppShellState extends State<AppShell> {
         onExplore: () =>
             setState(() => selected = AppDestination.explore.index),
       ),
-      const LineUpPage(),
+      const DealsPage(),
       const ProfilePage(),
     ];
     return Scaffold(
@@ -133,7 +142,7 @@ class _AppShellState extends State<AppShell> {
                 ),
                 selectedIndex: selected,
                 extended: MediaQuery.sizeOf(context).width >= 1200,
-                onDestinationSelected: (i) => setState(() => selected = i),
+                onDestinationSelected: selectDestination,
                 destinations: List.generate(
                   labels.length,
                   (i) => NavigationRailDestination(
@@ -144,40 +153,46 @@ class _AppShellState extends State<AppShell> {
                 ),
               ),
             Expanded(
-              child: Column(
-                children: [
-                  if (settings.demo)
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 5,
-                      ),
-                      color: Theme.of(context).colorScheme.surfaceContainerHigh,
-                      child: const Text(
-                        'Demo · fictional sample data',
-                        style: TextStyle(fontSize: 11),
-                      ),
-                    ),
-                  if (!settings.hasApiKey && settings.demo)
-                    Align(
-                      alignment: Alignment.centerRight,
-                      child: TextButton.icon(
-                        onPressed: () => openSettings(context),
-                        icon: Icon(Icons.link, size: 16),
-                        label: const Text(
-                          'Connect RAWG',
-                          style: TextStyle(fontSize: 12),
+              child: WalletViewport(
+                child: Column(
+                  children: [
+                    if (settings.demo && selected != AppDestination.deals.index)
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 5,
+                        ),
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.surfaceContainerHigh,
+                        child: const Text(
+                          'Demo · fictional sample data',
+                          style: TextStyle(fontSize: 11),
                         ),
                       ),
+                    if (!settings.hasApiKey &&
+                        settings.demo &&
+                        selected != AppDestination.deals.index)
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: TextButton.icon(
+                          onPressed: () => openSettings(context),
+                          icon: Icon(Icons.link, size: 16),
+                          label: const Text(
+                            'Connect RAWG',
+                            style: TextStyle(fontSize: 12),
+                          ),
+                        ),
+                      ),
+                    Expanded(
+                      child: HeroMode(
+                        enabled: false,
+                        child: IndexedStack(index: selected, children: pages),
+                      ),
                     ),
-                  Expanded(
-                    child: HeroMode(
-                      enabled: false,
-                      child: IndexedStack(index: selected, children: pages),
-                    ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ],
@@ -187,7 +202,7 @@ class _AppShellState extends State<AppShell> {
           ? null
           : NavigationBar(
               selectedIndex: selected,
-              onDestinationSelected: (i) => setState(() => selected = i),
+              onDestinationSelected: selectDestination,
               destinations: List.generate(
                 labels.length,
                 (i) => NavigationDestination(

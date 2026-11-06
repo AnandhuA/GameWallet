@@ -59,7 +59,7 @@ class SettingsProvider extends ChangeNotifier {
   }
 
   Color get accentColor => Color(
-    storage.preferences.get('accentColor', defaultValue: 0xFF06B6D4) as int,
+    storage.preferences.get('accentColor', defaultValue: 0xFF5CD0C6) as int,
   );
   List<String> get genres =>
       (storage.preferences.get('preferredGenres', defaultValue: <String>[])
@@ -127,6 +127,9 @@ class SettingsProvider extends ChangeNotifier {
   ThemeMode get theme => ThemeMode.values.byName(
     storage.preferences.get('theme', defaultValue: 'dark') as String,
   );
+  bool get amoled =>
+      theme == ThemeMode.dark &&
+      storage.preferences.get('amoled', defaultValue: false) == true;
   bool get demo =>
       storage.preferences.get('demo', defaultValue: !hasApiKey) as bool;
   List<String> get platforms {
@@ -150,7 +153,15 @@ class SettingsProvider extends ChangeNotifier {
   }
 
   Future<void> setTheme(ThemeMode value) async {
-    await storage.preferences.put('theme', value.name);
+    await storage.preferences.putAll({'theme': value.name, 'amoled': false});
+    notifyListeners();
+  }
+
+  Future<void> setAmoled(bool value) async {
+    await storage.preferences.putAll({
+      'amoled': value,
+      if (value) 'theme': ThemeMode.dark.name,
+    });
     notifyListeners();
   }
 

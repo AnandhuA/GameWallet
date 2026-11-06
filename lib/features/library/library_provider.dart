@@ -1,12 +1,14 @@
 import 'dart:async';
 import 'package:flutter/widgets.dart';
 import '../../core/models.dart';
+import '../../core/catalog_identity.dart';
 import '../../core/storage.dart';
 import '../../core/image_cache_service.dart';
 
 class LibraryProvider extends ChangeNotifier with WidgetsBindingObserver {
   final AppStorage storage;
   final ImageCacheService? imageCache;
+  final CatalogIdentity? identities;
   final DateTime Function() clock;
   Timer? _midnight;
   int _ids = 0;
@@ -14,9 +16,11 @@ class LibraryProvider extends ChangeNotifier with WidgetsBindingObserver {
   LibraryProvider(
     this.storage, {
     this.imageCache,
+    this.identities,
     DateTime Function()? clock,
     this.observeClock = false,
   }) : clock = clock ?? DateTime.now {
+    identities?.addListener(notifyListeners);
     if (observeClock) {
       WidgetsBinding.instance.addObserver(this);
       _schedule();
@@ -52,21 +56,54 @@ class LibraryProvider extends ChangeNotifier with WidgetsBindingObserver {
   @override
   void dispose() {
     _midnight?.cancel();
+    identities?.removeListener(notifyListeners);
     if (observeClock) WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
 
-  LibraryEntry? entry(Game game) => storage.library.get(game.key);
+  LibraryEntry? entry(Game game) {
+    final direct = storage.library.get(game.key);
+    if (direct != null) return direct;
+    final keys = identities?.keys(game.key) ?? <String>{};
+    final canonical = identities?.canonical(game.key);
+    return (canonical == null ? null : storage.library.get(canonical)) ??
+        keys.map(storage.library.get).whereType<LibraryEntry>().firstOrNull;
+  }
+
+  Game _snapshot(Game game) {
+    final saved = entry(game)?.game;
+    if (saved == null || saved.key == game.key) return game;
+    final merged = supplementGame(game, saved);
+    return Game.fromJson({
+      ...merged.toJson(),
+      'id': saved.id,
+      'source': saved.source,
+      'demo': saved.demo,
+      'provenance': {
+        ...merged.provenance,
+        'primary': game.source,
+        if (game.rating != null)
+          'rating': game.provenance['rating'] ?? game.source,
+      },
+    });
+  }
+
   List<LibraryEntry> entries(bool demo) =>
       storage.library.values.where((e) => e.game.demo == demo).toList();
   bool excludedFromDiscovery(Game game) =>
-      hasPlayed(game) || entry(game)?.status == LibraryStatus.playing;
+      (identities?.keys(game.key) ?? {game.key}).any((key) {
+        final value = storage.library.get(key);
+        return value?.status == LibraryStatus.playing ||
+            value?.status == LibraryStatus.completed ||
+            (value?.completedRuns ?? 0) > 0;
+      });
 
-  bool hasPlayed(Game game) {
-    final value = entry(game);
-    return value?.status == LibraryStatus.completed ||
-        (value?.completedRuns ?? 0) > 0;
-  }
+  bool hasPlayed(Game game) =>
+      (identities?.keys(game.key) ?? {game.key}).any((key) {
+        final value = storage.library.get(key);
+        return value?.status == LibraryStatus.completed ||
+            (value?.completedRuns ?? 0) > 0;
+      });
 
   List<LibraryEntry> playingEntries(bool demo) =>
       entries(demo).where((e) => e.status == LibraryStatus.playing).toList();
@@ -113,7 +150,7 @@ class LibraryProvider extends ChangeNotifier with WidgetsBindingObserver {
       LibraryEntry.fromJson({
         ...(entry(game) ?? LibraryEntry(game: game, bookmarked: false))
             .toJson(),
-        'game': game.toJson(),
+        'game': _snapshot(game).toJson(),
         'updated': clock().toIso8601String(),
         ...changes,
       });
@@ -268,7 +305,7 @@ class LibraryProvider extends ChangeNotifier with WidgetsBindingObserver {
   }
 
   Future<void> remove(Game game) async {
-    await storage.library.delete(game.key);
+    await storage.library.delete(entry(game)?.game.key ?? game.key);
     notifyListeners();
   }
 }

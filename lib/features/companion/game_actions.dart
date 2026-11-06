@@ -1,110 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../core/companion_models.dart';
-import '../../core/companion_repository.dart';
 import '../../core/models.dart';
 import '../../shared/widgets.dart';
 import '../journal/journal_pages.dart';
 import '../library/library_provider.dart';
 import '../library/playthrough_dates.dart';
 import 'companion_providers.dart';
-
-Future<void> addGameToLineUp(BuildContext context, Game game) async {
-  final provider = context.read<LineUpProvider>();
-  final lists = provider.entries(game.demo).where((l) => !l.starter).toList();
-  final selected = await showModalBottomSheet<String>(
-    context: context,
-    showDragHandle: true,
-    builder: (context) => SafeArea(
-      child: ListView(
-        shrinkWrap: true,
-        children: [
-          const ListTile(title: Text('Add to LineUp')),
-          ListTile(
-            leading: const Icon(Icons.add),
-            title: const Text('Create a LineUp'),
-            onTap: () => Navigator.pop(context, 'new'),
-          ),
-          for (final l in lists)
-            ListTile(
-              title: Text(l.title),
-              subtitle: Text('${l.games.length} games'),
-              onTap: () => Navigator.pop(context, l.id),
-            ),
-        ],
-      ),
-    ),
-  );
-  if (selected == null || !context.mounted) {
-    return;
-  }
-  if (selected == 'new') {
-    final name = await showDialog<String>(
-      context: context,
-      builder: (_) => const _ListNameDialog(),
-    );
-    if (name != null && context.mounted) {
-      await guarded(
-        context,
-        () => provider.save(
-          GameLineUp(
-            id: context.read<CompanionRepository>().newId(),
-            title: name,
-            games: [game],
-            demo: game.demo,
-          ),
-        ),
-      );
-    }
-  } else {
-    final list = provider.byId(selected);
-    if (list != null) {
-      await guarded(
-        context,
-        () => provider.save(list.copy(games: [...list.games, game])),
-      );
-    }
-  }
-}
-
-class _ListNameDialog extends StatefulWidget {
-  const _ListNameDialog();
-  @override
-  State<_ListNameDialog> createState() => _ListNameDialogState();
-}
-
-class _ListNameDialogState extends State<_ListNameDialog> {
-  final controller = TextEditingController();
-  @override
-  void dispose() {
-    controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) => AlertDialog(
-    title: const Text('New LineUp'),
-    content: TextField(
-      controller: controller,
-      maxLength: 80,
-      decoration: const InputDecoration(labelText: 'Name'),
-    ),
-    actions: [
-      TextButton(
-        onPressed: () => Navigator.pop(context),
-        child: const Text('Cancel'),
-      ),
-      FilledButton(
-        onPressed: () {
-          if (controller.text.trim().isNotEmpty) {
-            Navigator.pop(context, controller.text.trim());
-          }
-        },
-        child: const Text('Create'),
-      ),
-    ],
-  );
-}
 
 class GameActionsMenu extends StatelessWidget {
   final Game game;
@@ -121,6 +22,11 @@ class GameActionsMenu extends StatelessWidget {
   });
   Future<void> select(BuildContext context, String value) async {
     final hidden = context.read<DiscoveryPreferencesProvider>().hidden(game);
+
+    if (value == 'open') {
+      openGame(context, game);
+      return;
+    }
 
     if (value == 'primary') {
       primaryAction?.call();
@@ -143,9 +49,6 @@ class GameActionsMenu extends StatelessWidget {
         () => context.read<LibraryProvider>().favorite(game),
       );
       return;
-    }
-    if (value == 'lineup') {
-      await addGameToLineUp(context, game);
     }
     if (value == 'journal' && context.mounted) {
       await editPlaythrough(context, game);
@@ -191,6 +94,7 @@ class GameActionsMenu extends StatelessWidget {
   List<PopupMenuEntry<String>> items(BuildContext context) {
     final hidden = context.read<DiscoveryPreferencesProvider>().hidden(game);
     return [
+      const PopupMenuItem(value: 'open', child: Text('Open details')),
       if (context.read<LibraryProvider>().entry(game) != null) ...[
         const PopupMenuItem(value: 'dates', child: Text('Edit dates')),
         const PopupMenuItem(
@@ -223,7 +127,6 @@ class GameActionsMenu extends StatelessWidget {
         ),
       const PopupMenuItem(value: 'want', child: Text('Want to Play')),
       const PopupMenuItem(value: 'completed', child: Text('Mark completed')),
-      const PopupMenuItem(value: 'lineup', child: Text('Add to LineUp')),
       const PopupMenuItem(value: 'journal', child: Text('Add playthrough')),
       PopupMenuItem(
         value: 'hide',
@@ -233,7 +136,7 @@ class GameActionsMenu extends StatelessWidget {
   }
 
   Future<void> show(BuildContext context) async {
-    final selected = await showModalBottomSheet<String>(
+    final selected = await showWalletSheet<String>(
       context: context,
       showDragHandle: true,
       builder: (_) => SafeArea(

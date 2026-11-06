@@ -28,7 +28,7 @@ Future<bool> completeGame(
   try {
     final library = context.read<LibraryProvider>();
     final draft = library.completionDraft(game);
-    final choice = await showDialog<CompletionChoice>(
+    final choice = await showWalletSheet<CompletionChoice>(
       context: context,
       builder: (_) => PlaythroughDatesDialog(initial: draft, completion: true),
     );
@@ -196,18 +196,9 @@ class JournalDetail extends StatelessWidget {
               onPressed: () async {
                 final yes = await showDialog<bool>(
                   context: context,
-                  builder: (_) => AlertDialog(
-                    title: const Text('Delete this journal entry?'),
-                    actions: [
-                      TextButton(
-                        onPressed: () => Navigator.pop(context, false),
-                        child: const Text('Cancel'),
-                      ),
-                      FilledButton(
-                        onPressed: () => Navigator.pop(context, true),
-                        child: const Text('Delete'),
-                      ),
-                    ],
+                  builder: (_) => const ConfirmDialog(
+                    title: 'Delete this journal entry?',
+                    message: 'This entry will be removed from your journal.',
                   ),
                 );
                 if (yes == true && context.mounted) {
@@ -411,114 +402,120 @@ class _JournalEditorState extends State<JournalEditor> {
         ),
       ],
     ),
-    body: ListView(
-      padding: const EdgeInsets.all(16),
-      children: [
-        CatalogSourceLabel(demo: widget.game.demo),
-        Text(widget.game.title, style: Theme.of(context).textTheme.titleLarge),
-        const SizedBox(height: 20),
-        DropdownButtonFormField<double>(
-          initialValue: rating,
-          isExpanded: true,
-          decoration: const InputDecoration(labelText: 'Your rating'),
-          items: [
-            const DropdownMenuItem(value: null, child: Text('Not rated')),
-            ...List.generate(
-              10,
-              (i) => DropdownMenuItem(
-                value: (i + 1) / 2,
-                child: Text('★ ${(i + 1) / 2} / 5'),
+    body: WalletViewport(
+      form: true,
+      child: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          CatalogSourceLabel(demo: widget.game.demo),
+          Text(
+            widget.game.title,
+            style: Theme.of(context).textTheme.titleLarge,
+          ),
+          const SizedBox(height: 20),
+          DropdownButtonFormField<double>(
+            initialValue: rating,
+            isExpanded: true,
+            decoration: const InputDecoration(labelText: 'Your rating'),
+            items: [
+              const DropdownMenuItem(value: null, child: Text('Not rated')),
+              ...List.generate(
+                10,
+                (i) => DropdownMenuItem(
+                  value: (i + 1) / 2,
+                  child: Text('★ ${(i + 1) / 2} / 5'),
+                ),
+              ),
+            ],
+            onChanged: saving ? null : (v) => setState(() => rating = v),
+          ),
+          if (run != null || widget.initial?.playthroughId != null)
+            Text(
+              'Dates are linked to this playthrough. Edit them in Playthrough history.',
+            )
+          else
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              title: const Text('Play date'),
+              subtitle: Text(
+                played?.toString().split(' ').first ?? 'Unknown / imported',
+              ),
+              trailing: const Icon(Icons.calendar_month),
+              onTap: saving
+                  ? null
+                  : () async {
+                      final d = await showDatePicker(
+                        context: context,
+                        initialDate: played ?? DateTime.now(),
+                        firstDate: DateTime(1970),
+                        lastDate: DateTime.now(),
+                      );
+                      if (d != null) {
+                        setState(() => played = d);
+                      }
+                    },
+            ),
+          for (final f in [
+            (review, 'Review'),
+            (notes, 'Personal notes'),
+            (moment, 'Favorite moment'),
+            (quote, 'Favorite quote'),
+            (custom, 'Reactions (comma separated)'),
+            (tags, 'Tags (comma separated)'),
+          ])
+            Padding(
+              padding: const EdgeInsets.only(bottom: 16),
+              child: TextField(
+                controller: f.$1,
+                maxLines: f.$1 == review || f.$1 == notes ? 3 : 1,
+                maxLength: f.$1 == review || f.$1 == notes ? 5000 : 500,
+                enabled: !saving,
+                decoration: InputDecoration(labelText: f.$2),
               ),
             ),
-          ],
-          onChanged: saving ? null : (v) => setState(() => rating = v),
-        ),
-        if (run != null || widget.initial?.playthroughId != null)
-          Text(
-            'Dates are linked to this playthrough. Edit them in Playthrough history.',
-          )
-        else
-          ListTile(
-            contentPadding: EdgeInsets.zero,
-            title: const Text('Play date'),
-            subtitle: Text(
-              played?.toString().split(' ').first ?? 'Unknown / imported',
+          Wrap(
+            spacing: 6,
+            children: ['Loved it', 'Challenging', 'Relaxing', 'Emotional']
+                .map(
+                  (v) => ActionChip(
+                    label: Text(v),
+                    onPressed: saving
+                        ? null
+                        : () {
+                            final values =
+                                custom.text
+                                    .split(',')
+                                    .map((v) => v.trim())
+                                    .where((v) => v.isNotEmpty)
+                                    .toSet()
+                                  ..add(v);
+                            setState(() => custom.text = values.join(', '));
+                          },
+                  ),
+                )
+                .toList(),
+          ),
+          const SizedBox(height: 16),
+          DropdownButtonFormField<String>(
+            initialValue: recommend,
+            decoration: const InputDecoration(
+              labelText: 'Would you recommend it?',
             ),
-            trailing: const Icon(Icons.calendar_month),
-            onTap: saving
-                ? null
-                : () async {
-                    final d = await showDatePicker(
-                      context: context,
-                      initialDate: played ?? DateTime.now(),
-                      firstDate: DateTime(1970),
-                      lastDate: DateTime.now(),
-                    );
-                    if (d != null) {
-                      setState(() => played = d);
-                    }
-                  },
+            items: const [
+              DropdownMenuItem(value: 'yes', child: Text('Yes')),
+              DropdownMenuItem(value: 'maybe', child: Text('Maybe')),
+              DropdownMenuItem(value: 'no', child: Text('No')),
+            ],
+            onChanged: saving ? null : (v) => setState(() => recommend = v!),
           ),
-        for (final f in [
-          (review, 'Review'),
-          (notes, 'Personal notes'),
-          (moment, 'Favorite moment'),
-          (quote, 'Favorite quote'),
-          (custom, 'Reactions (comma separated)'),
-          (tags, 'Tags (comma separated)'),
-        ])
-          Padding(
-            padding: const EdgeInsets.only(bottom: 16),
-            child: TextField(
-              controller: f.$1,
-              maxLines: f.$1 == review || f.$1 == notes ? 3 : 1,
-              maxLength: f.$1 == review || f.$1 == notes ? 5000 : 500,
-              enabled: !saving,
-              decoration: InputDecoration(labelText: f.$2),
-            ),
+          if (error != null) Notice(error!),
+          const SizedBox(height: 24),
+          FilledButton(
+            onPressed: saving ? null : save,
+            child: const Text('Save playthrough'),
           ),
-        Wrap(
-          spacing: 6,
-          children: ['Loved it', 'Challenging', 'Relaxing', 'Emotional']
-              .map(
-                (v) => ActionChip(
-                  label: Text(v),
-                  onPressed: saving
-                      ? null
-                      : () {
-                          final values =
-                              custom.text
-                                  .split(',')
-                                  .map((v) => v.trim())
-                                  .where((v) => v.isNotEmpty)
-                                  .toSet()
-                                ..add(v);
-                          setState(() => custom.text = values.join(', '));
-                        },
-                ),
-              )
-              .toList(),
-        ),
-        const SizedBox(height: 16),
-        DropdownButtonFormField<String>(
-          initialValue: recommend,
-          decoration: const InputDecoration(
-            labelText: 'Would you recommend it?',
-          ),
-          items: const [
-            DropdownMenuItem(value: 'yes', child: Text('Yes')),
-            DropdownMenuItem(value: 'maybe', child: Text('Maybe')),
-            DropdownMenuItem(value: 'no', child: Text('No')),
-          ],
-          onChanged: saving ? null : (v) => setState(() => recommend = v!),
-        ),
-        if (error != null) Notice(error!),
-        const SizedBox(height: 24),
-        FilledButton(
-          onPressed: saving ? null : save,
-          child: const Text('Save playthrough'),
-        ),
-      ],
+        ],
+      ),
     ),
   );
 }

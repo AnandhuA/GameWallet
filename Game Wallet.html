@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Game Wallet</title>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700&family=Figtree:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f4f4f7;--sf:#fff;--sf2:#ebebf1;--tx:#15161d;--mu:#5b5e6d;--ln:#dcdde6;--ac:#0e8f86;--acx:#fff;--wr:#b3261e;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#0f1016;--sf:#181a24;--sf2:#222533;--tx:#ececf2;--mu:#9a9db0;--ln:#2b2e3f;--ac:#5cd0c6;--acx:#07201e;--wr:#ff8a80}}
+:root[data-theme=dark]{--bg:#0f1016;--sf:#181a24;--sf2:#222533;--tx:#ececf2;--mu:#9a9db0;--ln:#2b2e3f;--ac:#5cd0c6;--acx:#07201e;--wr:#ff8a80}
+*{box-sizing:border-box}html,body{height:100%;margin:0}
+body{background:var(--bg);color:var(--tx);font:15px/1.4 Figtree,system-ui,sans-serif}
+h1,h2,h3{font-family:'Bricolage Grotesque',Figtree,sans-serif;margin:0;letter-spacing:-.01em}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer;border:0;background:none}
+:focus-visible{outline:2px solid var(--ac);outline-offset:2px}
+.app{display:flex;flex-direction:column;height:100%}
+main{flex:1;overflow-y:auto;padding:14px 16px 24px;max-width:1100px;width:100%;margin:0 auto}
+nav{display:flex;background:var(--sf);border-top:1px solid var(--ln);padding-bottom:env(safe-area-inset-bottom,0px)}
+nav button{flex:1;min-height:56px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:12px;color:var(--mu)}
+nav button svg{width:22px;height:22px}
+nav button[aria-current=page]{color:var(--ac);font-weight:600}
+nav .mid{position:relative}
+@media(min-width:900px){.app{flex-direction:row-reverse}nav{flex-direction:column;width:92px;border-top:0;border-right:1px solid var(--ln);justify-content:center;gap:6px;order:-1}nav button{flex:0;min-height:64px}main{padding:24px 32px}}
+.row{display:flex;align-items:center;gap:10px}.sp{flex:1}
+.mu{color:var(--mu)}.sm{font-size:13px}
+.btn{min-height:44px;padding:0 16px;border-radius:12px;background:var(--ac);color:var(--acx);font-weight:600;display:inline-flex;align-items:center;gap:6px;justify-content:center}
+.btn.o{background:none;border:1px solid var(--ln);color:var(--tx)}.btn.s{min-height:40px;padding:0 12px;font-size:14px}
+.ib{width:44px;height:44px;border-radius:12px;display:grid;place-items:center;background:var(--sf)}
+.ib svg{width:20px;height:20px}
+.search{overflow:hidden;width:44px;transition:width .25s;background:var(--sf);border-radius:12px;display:flex;align-items:center;height:44px}
+.search.open{width:min(260px,52vw)}.search input{border:0;background:none;width:100%;outline:0;padding:0 4px}
+.search button{width:44px;height:44px;flex:none;display:grid;place-items:center}
+.tabs{display:flex;gap:6px;margin:14px 0 10px;background:var(--sf);padding:4px;border-radius:14px}
+.tabs button{flex:1;min-height:40px;border-radius:10px;color:var(--mu);font-weight:500}
+.tabs button[aria-selected=true]{background:var(--sf2);color:var(--tx);font-weight:600}
+.tabs b{color:var(--ac);margin-left:4px}
+.tools{display:flex;gap:8px;align-items:center;margin-bottom:12px}
+select,.chip{min-height:40px;border-radius:10px;background:var(--sf);border:1px solid var(--ln);padding:0 10px}
+.chip{display:inline-flex;align-items:center;gap:6px;font-size:14px;white-space:nowrap}
+.chip[aria-pressed=true]{background:var(--ac);color:var(--acx);border-color:var(--ac)}
+.grid{display:grid;gap:12px;grid-template-columns:repeat(var(--cols,auto-fill),minmax(130px,1fr))}
+.grid.c2{grid-template-columns:repeat(2,1fr)}.grid.c3{grid-template-columns:repeat(3,1fr)}.grid.c4{grid-template-columns:repeat(4,1fr)}.grid.c5{grid-template-columns:repeat(5,1fr)}
+.art{aspect-ratio:3/4;border-radius:12px;position:relative;overflow:hidden;display:grid;place-items:center;font:700 34px 'Bricolage Grotesque',sans-serif;color:rgba(255,255,255,.92);background:linear-gradient(150deg,hsl(var(--h1) 55% 38%),hsl(var(--h2) 60% 20%))}
+.art.w{aspect-ratio:16/9}
+.art:after{content:"";position:absolute;inset:0;background:repeating-linear-gradient(115deg,transparent 0 14px,rgba(255,255,255,.04) 14px 15px)}
+.card{text-align:left;display:block;width:100%}
+.card .t{font-weight:600;margin-top:6px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.badge{position:absolute;left:6px;bottom:6px;z-index:1;background:rgba(0,0,0,.62);color:#fff;font:500 12px Figtree;padding:3px 8px;border-radius:8px}
+.list{display:flex;flex-direction:column;gap:8px}
+.li{display:flex;gap:12px;align-items:center;background:var(--sf);border-radius:14px;padding:8px;width:100%;text-align:left}
+.li .art{width:56px;aspect-ratio:3/4;font-size:20px;flex:none}
+.hero{display:grid;gap:12px;grid-template-columns:repeat(auto-fill,minmax(300px,1fr))}
+.pc{position:relative;border-radius:16px;overflow:hidden;min-height:170px;display:flex;align-items:flex-end;text-align:left;background:linear-gradient(150deg,hsl(var(--h1) 55% 36%),hsl(var(--h2) 60% 16%));color:#fff}
+.pc .in{position:relative;padding:14px;width:100%;background:linear-gradient(transparent,rgba(0,0,0,.78) 55%)}
+.pc h3{font-size:20px}.pc .m{font-size:13px;opacity:.88}
+.pc .acts{display:flex;gap:8px;margin-top:10px}
+.pc .btn{background:#fff;color:#111}.pc .btn.o{background:rgba(255,255,255,.14);color:#fff;border-color:rgba(255,255,255,.4)}
+.link{color:#fff;text-decoration:underline dotted;background:none;padding:0}
+h2.sec{font-size:17px;margin:20px 0 10px}
+.panel{background:var(--sf);border-radius:14px;padding:12px;display:flex;gap:12px;align-items:center}
+.empty{text-align:center;padding:36px 16px;color:var(--mu)}.empty h3{color:var(--tx);margin-bottom:6px}
+.scrim{position:fixed;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:flex-end;justify-content:center;z-index:20;animation:fade .2s}
+.sheet{background:var(--sf);width:min(520px,100%);border-radius:20px 20px 0 0;padding:18px 18px calc(18px + env(safe-area-inset-bottom,0px));max-height:90%;overflow:auto;animation:up .25s}
+@media(min-width:700px){.scrim{align-items:center}.sheet{border-radius:20px}}
+.sheet h3{margin-bottom:12px}
+label{display:block;font-size:13px;color:var(--mu);margin:10px 0 4px}
+input[type=date],input[type=text],textarea{width:100%;min-height:44px;border-radius:10px;border:1px solid var(--ln);background:var(--bg);padding:8px 10px}
+.err{color:var(--wr);font-size:13px;min-height:18px;margin-top:6px}
+.menu{position:fixed;z-index:30;background:var(--sf);border:1px solid var(--ln);border-radius:12px;padding:4px;min-width:190px;box-shadow:0 8px 28px rgba(0,0,0,.35)}
+.menu button{display:block;width:100%;text-align:left;min-height:42px;padding:0 12px;border-radius:8px}.menu button:hover{background:var(--sf2)}
+.toast{position:fixed;left:50%;bottom:90px;transform:translateX(-50%);background:var(--tx);color:var(--bg);padding:10px 16px;border-radius:12px;z-index:40}
+.seg{display:flex;gap:6px}.seg .btn{flex:1}
+.stars button{font-size:28px;color:var(--ln);min-width:44px;min-height:44px}.stars .on{color:#e9b23b}
+.det .banner{height:220px;position:relative;border-radius:0 0 20px 20px;background:linear-gradient(150deg,hsl(var(--h1) 55% 38%),hsl(var(--h2) 60% 14%))}
+.det .banner:after{content:"";position:absolute;inset:0;background:linear-gradient(transparent 40%,var(--bg))}
+.det .head{display:flex;gap:14px;margin-top:-70px;position:relative;z-index:1;align-items:flex-end}
+.det .head .art{width:104px;flex:none}
+.desc{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}.desc.full{display:block}
+.shots{display:flex;gap:8px;overflow-x:auto}.shots .art{flex:none;width:200px}
+.offer{display:flex;justify-content:space-between;gap:8px;padding:10px 0;border-bottom:1px solid var(--ln)}
+.note{font-size:12px;color:var(--mu);margin-top:8px}
+.bar{height:6px;border-radius:3px;background:var(--sf2);overflow:hidden}.bar i{display:block;height:100%;background:var(--ac)}
+.stat{flex:1;text-align:center;padding:12px 4px}.stat b{display:block;font:700 22px 'Bricolage Grotesque'}
+@keyframes up{from{transform:translateY(24px);opacity:0}}@keyframes fade{from{opacity:0}}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div class="app"><main id="main"></main>
+<nav id="nav" aria-label="Main"></nav></div>
+<div id="layer"></div>
+<script>
+const T=new Date(),iso=d=>new Date(d.getTime()-d.getTimezoneOffset()*6e4).toISOString().slice(0,10),ago=n=>{const d=new Date(T);d.setDate(d.getDate()-n);return iso(d)};
+const today=iso(T);
+const G=[
+['Hollow Meridian','RPG','PC','playing',3,260,200],['Neon Drift GP','Racing','PS5','playing',11,330,280],
+['Saltmarsh','Adventure','Switch','played',60,150,190,ago(40)],['Brickwork Kings','Strategy','PC','played',30,30,50,ago(12)],['Lantern Run','Platformer','Switch','played',20,45,20,ago(2)],['Old Static','Horror','PC','played',0,0,0,null],
+['Cinder Court','Action','Xbox','saved',0,200,230],['Tidepool Tactics','Strategy','iOS','saved',0,170,210],['Paper Orbit','Puzzle','Android','saved',0,290,320],['Ember Atlas','RPG','PC','saved',0,15,350],['Quiet Harbor','Adventure','PC','saved',0,185,160],
+['Vanta Circuit','Shooter','PC',null,0,350,10],['Moss & Moonlight','Platformer','Switch',null,0,120,160],['Gridlock 9','Racing','Xbox',null,0,240,270]
+].map((a,i)=>({id:'demo:'+i,t:a[0],g:a[1],p:a[2],st:a[3],start:a[3]?ago(a[4]||0):null,end:a[7]||null,h1:a[5],h2:a[6],rel:2020+i%6,rate:(3.6+(i*7%14)/10).toFixed(1),fav:i%5==0,hidden:false}));
+G[5].start=null;
+const S={tab:'games',sub:'playing',view:'grid',cols:'auto',sort:'recent',q:'',searchOpen:false,plat:'My platforms',name:'Alex',journal:[],lineups:[{n:'Cozy weekend',ids:[2,4,8],starter:false},{n:'Starter: Story-rich classics',ids:[0,2,10],starter:true}]};
+const ico={home:'M3 11l9-8 9 8v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z',explore:'M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zm3.5 5.5l-2 5-5 2 2-5z',games:'M6 8h12a3 3 0 0 1 3 3v4a3 3 0 0 1-5.2 2L14 15h-4l-1.8 2A3 3 0 0 1 3 15v-4a3 3 0 0 1 3-3zm2 2v4m-2-2h4m6-1h.01m2 2h.01',lineup:'M4 6h16M4 12h16M4 18h10',profile:'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zm-8 9a8 8 0 0 1 16 0',search:'M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14zm9 16l-4-4',plus:'M12 5v14M5 12h14',layout:'M4 4h7v7H4zm9 0h7v7h-7zM4 13h7v7H4zm9 0h7v7h-7z',x:'M6 6l12 12M18 6L6 18'};
+const I=(k)=>`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${ico[k]}"/></svg>`;
+const $=s=>document.querySelector(s),esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const days=(a,b)=>Math.round((new Date(b)-new Date(a))/864e5)+1;
+const art=(g,w)=>`<div class="art${w?' w':''}" style="--h1:${g.h1};--h2:${g.h2}" role="img" aria-label="Cover art for ${esc(g.t)}">${g.t[0]}</div>`;
+const byId=id=>G.find(g=>g.id==id);
+function toast(m){const t=document.createElement('div');t.className='toast';t.setAttribute('role','status');t.textContent=m;document.body.append(t);setTimeout(()=>t.remove(),2200)}
+function sheet(html,on){const L=$('#layer');L.innerHTML=`<div class="scrim"><div class="sheet" role="dialog" aria-modal="true">${html}</div></div>`;L.firstChild.onclick=e=>{if(e.target==L.firstChild)close()};on&&on(L.querySelector('.sheet'))}
+function close(){$('#layer').innerHTML='';document.querySelectorAll('.menu').forEach(m=>m.remove())}
+function setStatus(g,st){
+ if(st=='playing'&&g.st!='playing'){g.start=today;g.end=null}
+ if(st=='saved'&&g.st=='playing'){g.start=null}
+ g.st=st;toast(`${g.t}: ${st=='playing'?'Playing':st=='played'?'Played':'Saved'}`);render()}
+/* context menu */
+function ctx(e,g){e.preventDefault();document.querySelectorAll('.menu').forEach(m=>m.remove());
+ const m=document.createElement('div');m.className='menu';m.setAttribute('role','menu');
+ const items=[['Open details',()=>details(g)],['Mark as Playing',()=>setStatus(g,'playing')],['Save for later',()=>setStatus(g,'saved')],[g.fav?'Remove favorite':'Favorite',()=>{g.fav=!g.fav;render()}],['Add to LineUp',()=>addLU(g)],['Hide game',()=>{g.hidden=true;toast('Hidden from discovery');render()}]];
+ items.forEach(([l,f])=>{const b=document.createElement('button');b.textContent=l;b.setAttribute('role','menuitem');b.onclick=()=>{m.remove();f()};m.append(b)});
+ document.body.append(m);const x=e.clientX||innerWidth/2,y=e.clientY||innerHeight/2;m.style.left=Math.min(x,innerWidth-210)+'px';m.style.top=Math.min(y,innerHeight-m.offsetHeight-8)+'px';
+ setTimeout(()=>addEventListener('click',()=>m.remove(),{once:true}),0)}
+function bindCard(el,g){el.onclick=()=>details(g);el.oncontextmenu=e=>ctx(e,g);let t;el.ontouchstart=e=>{const p=e.touches[0];t=setTimeout(()=>ctx({preventDefault(){},clientX:p.clientX,clientY:p.clientY},g),520)};['ontouchend','ontouchmove'].forEach(k=>el[k]=()=>clearTimeout(t))}
+function addLU(g){sheet(`<h3>Add to LineUp</h3><div class="list">${S.lineups.map((l,i)=>`<button class="li" data-i="${i}"><b>${esc(l.n)}</b><span class="sp"></span><span class="mu sm">${l.ids.length} games</span></button>`).join('')}</div><p class="note">Starter lists are cloned before editing.</p>`,s=>s.querySelectorAll('[data-i]').forEach(b=>b.onclick=()=>{let l=S.lineups[b.dataset.i];if(l.starter){l={n:l.n.replace('Starter: ','')+' (copy)',ids:[...l.ids],starter:false};S.lineups.unshift(l)}const k=G.indexOf(g);if(!l.ids.includes(k))l.ids.push(k);close();toast('Added to '+l.n);render()}))}
+/* completion */
+function complete(g){
+ let st={s:g.start||'',e:today};
+ const draw=(s,rev)=>{
+  s.innerHTML=rev?`<h3>Review ${esc(g.t)}</h3><div class="stars" id="stars" role="radiogroup" aria-label="Rating">${[1,2,3,4,5].map(n=>`<button data-n="${n}" role="radio" aria-label="${n} stars">★</button>`).join('')}</div><label for="rv">Review (optional)</label><textarea id="rv" rows="4"></textarea><div class="seg" style="margin-top:14px"><button class="btn o" id="bk">Back</button><button class="btn" id="sv">Save and complete</button></div>`:
+  `<h3>Complete game</h3><p class="mu sm" style="margin-top:-6px">${esc(g.t)}</p><label for="ds">Start date</label><input type="date" id="ds" max="${today}" value="${st.s}"><label for="de">End date</label><input type="date" id="de" max="${today}" value="${st.e}"><div class="err" id="er" role="alert"></div><p id="du" style="font-weight:600;margin:4px 0 14px"></p><div class="seg"><button class="btn o" id="cx">Cancel</button><button class="btn o" id="nr">No review</button><button class="btn" id="ar">Add review</button></div>`;
+  if(rev){let r=0;s.querySelectorAll('[data-n]').forEach(b=>b.onclick=()=>{r=+b.dataset.n;s.querySelectorAll('[data-n]').forEach(x=>x.classList.toggle('on',+x.dataset.n<=r))});$('#bk').onclick=()=>draw(s,false);$('#sv').onclick=()=>{fin(r,$('#rv').value)};return}
+  const chk=()=>{st.s=$('#ds').value;st.e=$('#de').value;let m='';if(st.e>today||st.s>today)m='Dates can’t be in the future.';else if(st.s&&st.e&&st.e<st.s)m='End date must be on or after the start date.';$('#er').textContent=m;$('#du').textContent=!m&&st.s&&st.e?`Duration: ${days(st.s,st.e)} calendar day${days(st.s,st.e)>1?'s':''}`:(st.s?'':'Start date unknown. Duration won’t be shown.');['nr','ar'].forEach(i=>$('#'+i).disabled=!!m||!st.e);return !m};
+  ['ds','de'].forEach(i=>$('#'+i).oninput=chk);chk();$('#cx').onclick=close;$('#nr').onclick=()=>chk()&&fin();$('#ar').onclick=()=>chk()&&draw(s,true)};
+ const fin=(r,txt)=>{g.st='played';g.start=st.s||null;g.end=st.e;if(r||txt)S.journal.unshift({id:g.id,t:g.t,r,txt,d:st.e});close();toast('Completed '+g.t);S.sub='played';render()};
+ sheet('',s=>draw(s,false))}
+function editStart(g){sheet(`<h3>Start date</h3><input type="date" id="sd" max="${today}" value="${g.start}"><div class="err" id="er" role="alert"></div><div class="seg" style="margin-top:12px"><button class="btn o" id="c">Cancel</button><button class="btn" id="o">Save</button></div>`,s=>{$('#c').onclick=close;$('#o').onclick=()=>{const v=$('#sd').value;if(!v||v>today)return $('#er').textContent='Choose a date that isn’t in the future.';g.start=v;close();render()}})}
+function journalEdit(g){sheet(`<h3>Journal: ${esc(g.t)}</h3><label for="jt">Notes</label><textarea id="jt" rows="4"></textarea><div class="seg" style="margin-top:12px"><button class="btn o" id="c">Cancel</button><button class="btn" id="o">Save entry</button></div>`,()=>{$('#c').onclick=close;$('#o').onclick=()=>{S.journal.unshift({id:g.id,t:g.t,r:0,txt:$('#jt').value,d:today});close();toast('Journal entry saved')}})}
+/* details */
+function details(g){
+ const L=$('#layer');L.innerHTML=`<div class="scrim" style="align-items:stretch;background:var(--bg)"><div class="det" style="width:min(760px,100%);margin:auto;overflow:auto;height:100%;padding-bottom:30px">
+ <div class="banner"><button class="ib" id="bk" style="position:absolute;left:12px;top:12px;z-index:2;background:rgba(0,0,0,.5);color:#fff" aria-label="Back">←</button></div>
+ <div style="padding:0 16px"><div class="head">${art(g)}<div><h2 style="font-size:24px">${esc(g.t)}</h2><div class="mu sm">${g.rel} · ★ ${g.rate} · ${g.g}</div><div class="sm" style="margin-top:4px;color:var(--ac);font-weight:600">${{playing:'Playing · Day '+(g.start?days(g.start,today):'?'),played:'Played'+(g.start&&g.end?' · '+days(g.start,g.end)+' days':''),saved:'Saved'}[g.st]||'Not in library'}</div></div></div>
+ <div class="seg" style="margin:16px 0 8px">${['saved','playing','played'].map(s=>`<button class="btn ${g.st==s?'':'o'}" data-s="${s}">${s[0].toUpperCase()+s.slice(1)}</button>`).join('')}</div>
+ <div class="row" style="flex-wrap:wrap"><button class="chip" id="fv" aria-pressed="${g.fav}">♥ Favorite</button><button class="chip" id="jn">Journal</button><button class="chip" id="pl">Plan</button><button class="chip" id="lu">LineUp</button><button class="chip" id="sp">Spin</button></div>
+ ${g.st=='playing'&&g.start?`<p class="sm">Started ${g.start}. <button class="link" style="color:var(--ac)" id="es">Edit start date</button></p>`:''}
+ <h2 class="sec">About</h2><p class="desc" id="ds">A ${g.g.toLowerCase()} adventure built for the demo catalog. Descriptions collapse to three lines so the actions stay close. Explore the world, manage your progress, and keep notes as you go. Every detail here is placeholder text standing in for RAWG data.</p><button class="link" style="color:var(--ac)" id="rm">Read more</button>
+ <h2 class="sec">Platforms</h2><div class="row" style="flex-wrap:wrap"><span class="chip">${g.p}</span><span class="chip">PC</span></div>
+ <h2 class="sec">Screenshots</h2><div class="shots">${[0,1,2].map(i=>art({...g,t:'▣',h1:(g.h1+i*20)%360},1)).join('')}</div>
+ <h2 class="sec">Developer and publisher</h2><p class="sm mu">Developer: Studio Ninefold · Publisher: Lowtide Games</p>
+ <h2 class="sec">Stores &amp; prices</h2><div id="st"><button class="btn o" id="ls">Check prices</button></div></div></div></div>`;
+ $('#bk').onclick=close;L.querySelectorAll('[data-s]').forEach(b=>b.onclick=()=>{b.dataset.s=='played'?complete(g):(setStatus(g,b.dataset.s),details(g))});
+ $('#fv').onclick=()=>{g.fav=!g.fav;details(g)};$('#jn').onclick=()=>journalEdit(g);$('#lu').onclick=()=>addLU(g);$('#pl').onclick=()=>toast('Planned for today in Play calendar');$('#sp').onclick=()=>{close();S.tab='profile';render();spin()};
+ $('#es')&&($('#es').onclick=()=>editStart(g));
+ $('#rm').onclick=e=>{const d=$('#ds');d.classList.toggle('full');e.target.textContent=d.classList.contains('full')?'Read less':'Read more'};
+ $('#ls').onclick=()=>{const rate=83.4,p=[['Steam',19.99,29.99],['GOG',22.49,29.99],['Fanatical',21.19,29.99]];$('#st').innerHTML=`<div role="status">${p.map((o,i)=>`<div class="offer"><div><b>${o[0]}</b>${i==0?' <span class="chip" style="min-height:24px;font-size:12px">Lowest listed</span>':''}<div class="sm mu">was $${o[2]} · −${Math.round((1-o[1]/o[2])*100)}%</div></div><div style="text-align:right"><b>≈ ₹${Math.round(o[1]*rate).toLocaleString('en-IN')}</b><div class="sm mu">$${o[1]} · <a href="#" style="color:var(--ac)" onclick="return false">Buy</a></div></div></div>`).join('')}</div><p class="note">Rupee amounts are estimates from a Frankfurter USD/INR reference rate dated ${today}. They are not Indian store checkout prices. Lowest among stores listed, not all stores. Last checked just now. Prices from CheapShark. <button class="link" style="color:var(--ac)" onclick="details(byId('${g.id}'))">Refresh</button></p>`}}
+/* spin */
+function spin(){const c=G.filter(g=>g.st=='saved'&&!g.hidden);sheet(`<h3>Spin wheel</h3><p class="mu sm">Candidates: Saved games (${c.length}). Hidden games are excluded.</p><div class="list">${c.map(g=>`<div class="li">${art(g)}<b>${esc(g.t)}</b></div>`).join('')}</div><div class="seg" style="margin-top:12px"><button class="btn" id="go">Spin</button></div><p id="win" role="status" style="font-weight:600;margin-top:10px"></p>`,()=>$('#go').onclick=()=>{const w=c[Math.floor(Math.random()*c.length)];$('#win').textContent='Winner: '+w.t})}
+/* screens */
+function card(g,badge){return `<button class="card" data-id="${g.id}" aria-label="${esc(g.t)}, ${g.g}">${art(g)}${badge?`<span class="badge" style="margin-top:0;position:static;display:inline-block;margin-top:6px">${badge}</span>`:''}<div class="t">${esc(g.t)}</div></button>`}
+function bindAll(){document.querySelectorAll('[data-id]').forEach(el=>bindCard(el,byId(el.dataset.id)))}
+function gamesScreen(){
+ const h=T.getHours(),gr=h<12?'Good morning':h<18?'Good afternoon':'Good evening';
+ const inSt=s=>G.filter(g=>g.st==s&&(!S.q||g.t.toLowerCase().includes(S.q.toLowerCase())));
+ const cnt=s=>G.filter(g=>g.st==s).length;
+ let L=inSt(S.sub);
+ const dateOf=g=>g.end||g.start||'';
+ L=[...L].sort((a,b)=>S.sort=='title'?a.t.localeCompare(b.t):dateOf(b).localeCompare(dateOf(a)));
+ let body='';
+ if(!L.length)body=`<div class="empty"><h3>${S.q?'No matches':S.sub=='playing'?'Nothing in progress':S.sub=='played'?'No finished games yet':'Your saved list is empty'}</h3><p>${S.q?'Try a different title.':'Find a game to get started.'}</p><button class="btn" data-go="explore">Add game</button></div>`;
+ else if(S.sub=='playing')body=`<div class="hero">${L.map(g=>`<div class="pc" style="--h1:${g.h1};--h2:${g.h2}"><div class="in"><h3>${esc(g.t)}</h3><div class="m">${g.g} · ${g.p}<br>Started ${g.start?`<button class="link" data-es="${g.id}" aria-label="Edit start date">${g.start}</button> · Day ${days(g.start,today)}`:'unknown'}</div><div class="acts"><button class="btn s" data-cp="${g.id}">Complete game</button><button class="btn s o" data-jn="${g.id}">Journal</button><button class="btn s o" data-id="${g.id}">Details</button></div></div></div>`).join('')}</div>`;
+ else if(S.view=='list')body=`<div class="list">${L.map(g=>`<button class="li" data-id="${g.id}">${art(g)}<div><b>${esc(g.t)}</b><div class="mu sm">${g.g} · ${g.p}</div>${S.sub=='played'?`<div class="sm" style="color:var(--ac)">${g.start&&g.end?'Finished in '+days(g.start,g.end)+' days':g.end?'Completed '+g.end:'Date unknown'}</div>`:''}</div></button>`).join('')}</div>`;
+ else body=`<div class="grid ${S.cols!='auto'?'c'+S.cols:''}">${L.map(g=>card(g,S.sub=='played'&&g.start&&g.end?days(g.start,g.end)+' days':'')).join('')}</div>`;
+ let extras='';
+ if(S.sub=='playing'&&!S.q){const rec=G.filter(g=>g.st=='played'&&g.end).sort((a,b)=>b.end.localeCompare(a.end)).slice(0,3);
+  extras=`<h2 class="sec">Up next</h2><div class="panel"><div><b>Tonight: Hollow Meridian</b><div class="sm mu">${today} · 20:00 · Pending</div></div><span class="sp"></span><button class="btn s o" data-go="profile">Calendar</button></div>`+(rec.length?`<h2 class="sec">Recent finishes</h2><div class="list">${rec.map(g=>`<button class="li" data-id="${g.id}">${art(g)}<div><b>${esc(g.t)}</b><div class="mu sm">Finished ${g.end}${g.start?' · '+days(g.start,g.end)+' days':''}</div></div></button>`).join('')}</div>`:'')}
+ return `<div class="row"><div><h1 style="font-size:22px">${gr}, ${esc(S.name)}</h1><div class="mu sm">${cnt('playing')} playing · ${cnt('played')} played</div></div><span class="sp"></span>
+ <div class="search ${S.searchOpen?'open':''}"><button id="sb" aria-label="Search my games">${I(S.searchOpen?'x':'search')}</button><input id="sq" type="search" placeholder="Search my games" aria-label="Search my games" value="${esc(S.q)}" ${S.searchOpen?'':'tabindex="-1"'}></div>
+ <button class="btn" data-go="explore" aria-label="Add game">${I('plus')}<span>Add</span></button></div>
+ <div class="tabs" role="tablist">${['playing','played','saved'].map(s=>`<button role="tab" aria-selected="${S.sub==s}" data-sub="${s}">${s[0].toUpperCase()+s.slice(1)}<b>${cnt(s)}</b></button>`).join('')}</div>
+ ${S.sub!='playing'?`<div class="tools"><select id="so" aria-label="Sort"><option value="recent" ${S.sort=='recent'?'selected':''}>Most recent</option><option value="title" ${S.sort=='title'?'selected':''}>Title A–Z</option></select><span class="sp"></span><button class="chip" id="lay" aria-label="Customize layout">${I('layout')}Layout</button></div>`:''}${body}${extras}`}
+function homeScreen(){
+ const pool=G.filter(g=>!g.st&&!g.hidden),f=pool[0]||G[11];
+ return `<h1 style="font-size:22px">Find your next game</h1><div class="mu sm">Ranked by your genres: RPG, Adventure</div>
+ <div class="row" style="margin:12px 0"><button class="btn o s" data-go="explore" style="flex:1;justify-content:flex-start">${I('search')} Search games</button><button class="btn s" id="smart">Smart Pick</button></div>
+ <div class="pc" style="--h1:${f.h1};--h2:${f.h2};min-height:210px"><div class="in"><div class="m">Recommended · matches your platforms</div><h3>${esc(f.t)}</h3><div class="m">${f.g} · ★ ${f.rate}</div><div class="acts"><button class="btn s" data-sv="${f.id}">Save</button><button class="btn s o" data-pl="${f.id}">Play</button></div></div></div>
+ <h2 class="sec">Browse by platform</h2><div class="row" style="flex-wrap:wrap">${['PC','PlayStation','Xbox','Nintendo','Android','iOS'].map(p=>`<button class="chip" data-go="explore">${p}</button>`).join('')}</div>
+ ${[['Popular now',0],['Top rated',3],['Recently released',6],['Upcoming',9]].map(([n,o])=>`<h2 class="sec">${n}</h2><div class="row" style="overflow-x:auto;align-items:flex-start">${[...G].filter(g=>!g.st&&!g.hidden).concat(G.filter(g=>g.st=='saved')).slice(o%4,o%4+6).map(g=>`<div style="width:120px;flex:none">${card(g)}</div>`).join('')}</div>`).join('')}`}
+function exploreScreen(){
+ const L=G.filter(g=>!g.st&&!g.hidden&&(!S.q||g.t.toLowerCase().includes(S.q.toLowerCase())));
+ return `<h1 style="font-size:22px">Explore</h1><div class="row" style="margin:12px 0"><div class="search open" style="flex:1;width:auto"><span style="width:44px;display:grid;place-items:center">${I('search')}</span><input id="sq" type="search" placeholder="Search by title" aria-label="Search by title" value="${esc(S.q)}"></div><button class="btn o" id="fl">Filters</button></div>
+ <div class="row" style="flex-wrap:wrap;margin-bottom:12px"><button class="chip" aria-pressed="true" id="pf">${S.plat} ✕</button><span class="mu sm">Best match · ${L.length} games</span></div>
+ ${L.length?`<div class="grid">${L.map(g=>card(g)).join('')}</div>`:`<div class="empty"><h3>No games match</h3><p>Your platform preference may be hiding results.</p><button class="btn" id="allp">All platforms</button></div>`}`}
+function luScreen(){return `<div class="row"><h1 style="font-size:22px">LineUp</h1><span class="sp"></span><button class="btn" id="nl">${I('plus')}New list</button></div><p class="mu sm">Ordered game collections you build yourself. Starter lists are curated by Game Wallet, not RAWG.</p>
+ <div class="list">${S.lineups.map(l=>{const done=l.ids.filter(i=>G[i].st=='played').length;return `<div class="li" style="flex-direction:column;align-items:stretch"><div class="row"><div><b>${esc(l.n)}</b><div class="mu sm">${l.starter?'Starter list':'Your list'} · ${done}/${l.ids.length} played</div></div><span class="sp"></span><div class="row" style="gap:4px">${l.ids.slice(0,3).map(i=>`<div style="width:34px">${art(G[i])}</div>`).join('')}</div></div><div class="bar"><i style="width:${l.ids.length?done/l.ids.length*100:0}%"></i></div></div>`}).join('')}</div>`}
+function profScreen(){const sv=G.filter(g=>g.st=='saved').length,pd=G.filter(g=>g.st=='played').length;
+ return `<div class="row"><div class="art" style="width:56px;aspect-ratio:1;border-radius:50%;--h1:180;--h2:220;font-size:24px">${esc(S.name[0])}</div><div><h1 style="font-size:22px">${esc(S.name)}</h1><div class="mu sm">Stored only on this device</div></div><span class="sp"></span><button class="btn o s" id="en">Edit name</button></div>
+ <div class="panel" style="margin:14px 0">${[['Want to play',sv],['Journal',S.journal.length],['Completed',pd]].map(a=>`<div class="stat"><b>${a[1]}</b><span class="mu sm">${a[0]}</span></div>`).join('')}</div>
+ <div class="list">${[['Play calendar','Plan sessions'],['Journal',S.journal.length+' entries'],['Hidden games',G.filter(g=>g.hidden).length+' hidden'],['Statistics','Completions and playtime'],['Spin wheel','Pick from your Saved games'],['Gaming preferences','Genres and platforms'],['Settings','Theme, RAWG key, cache'],['Privacy','No account, no cloud backup. Data stays on this device.']].map((a,i)=>`<button class="li" data-p="${i}"><div><b>${a[0]}</b><div class="mu sm">${a[1]}</div></div><span class="sp"></span>›</button>`).join('')}</div>`}
+function render(){
+ const sc={home:homeScreen,explore:exploreScreen,games:gamesScreen,lineup:luScreen,profile:profScreen}[S.tab];
+ const y=$('#main').scrollTop;$('#main').innerHTML=sc();$('#main').scrollTop=y;
+ $('#nav').innerHTML=[['home','Home'],['explore','Explore'],['games','My games'],['lineup','LineUp'],['profile','Profile']].map(([k,l])=>`<button data-go="${k}" ${S.tab==k?'aria-current="page"':''} class="${k=='games'?'mid':''}">${I(k)}<span>${l}</span></button>`).join('');
+ wire()}
+function wire(){
+ const M=$('#main');bindAll();
+ document.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>{S.tab=b.dataset.go;S.q='';S.searchOpen=false;render()});
+ M.querySelectorAll('[data-sub]').forEach(b=>b.onclick=()=>{S.sub=b.dataset.sub;render()});
+ M.querySelectorAll('[data-cp]').forEach(b=>b.onclick=e=>{e.stopPropagation();complete(byId(b.dataset.cp))});
+ M.querySelectorAll('[data-jn]').forEach(b=>b.onclick=e=>{e.stopPropagation();journalEdit(byId(b.dataset.jn))});
+ M.querySelectorAll('[data-es]').forEach(b=>b.onclick=e=>{e.stopPropagation();editStart(byId(b.dataset.es))});
+ M.querySelectorAll('[data-sv]').forEach(b=>b.onclick=()=>setStatus(byId(b.dataset.sv),'saved'));
+ M.querySelectorAll('[data-pl]').forEach(b=>b.onclick=()=>setStatus(byId(b.dataset.pl),'playing'));
+ const q=$('#sq');if(q){q.oninput=()=>{S.q=q.value;const p=q.selectionStart;render();const n=$('#sq');n.focus();n.setSelectionRange(p,p)};if(S.searchOpen&&S.tab=='games'&&!S._f){S._f=1;q.focus()}}
+ $('#sb')&&($('#sb').onclick=()=>{S.searchOpen=!S.searchOpen;S._f=0;if(!S.searchOpen)S.q='';render()});
+ $('#so')&&($('#so').onchange=e=>{S.sort=e.target.value;render()});
+ $('#lay')&&($('#lay').onclick=()=>sheet(`<h3>Layout</h3><label>View</label><div class="seg">${['grid','list'].map(v=>`<button class="btn ${S.view==v?'':'o'}" data-v="${v}">${v[0].toUpperCase()+v.slice(1)}</button>`).join('')}</div><label>Grid columns</label><div class="row" style="flex-wrap:wrap">${['auto',2,3,4,5].map(c=>`<button class="chip" aria-pressed="${S.cols==c}" data-c="${c}">${c=='auto'?'Auto':c}</button>`).join('')}</div>`,s=>{s.querySelectorAll('[data-v]').forEach(b=>b.onclick=()=>{S.view=b.dataset.v;close();render()});s.querySelectorAll('[data-c]').forEach(b=>b.onclick=()=>{S.cols=b.dataset.c;close();render()})}));
+ $('#fl')&&($('#fl').onclick=()=>sheet(`<h3>Filters</h3><label>Genre</label><div class="row" style="flex-wrap:wrap">${['Any','RPG','Action','Adventure','Strategy'].map((x,i)=>`<button class="chip" aria-pressed="${i==0}">${x}</button>`).join('')}</div><label>Platform</label><div class="row" style="flex-wrap:wrap">${['My platforms','All platforms','PC','PlayStation','Xbox','Nintendo'].map(x=>`<button class="chip" aria-pressed="${S.plat==x}" data-pf="${x}">${x}</button>`).join('')}</div><label>Sort by</label><select aria-label="Sort by"><option>Best match</option><option>Rating</option><option>Release date</option></select><div class="seg" style="margin-top:16px"><button class="btn" id="ap">Apply</button></div>`,s=>{s.querySelectorAll('[data-pf]').forEach(b=>b.onclick=()=>{S.plat=b.dataset.pf;close();render()});$('#ap').onclick=close}));
+ $('#pf')&&($('#pf').onclick=()=>{S.plat='All platforms';render()});$('#allp')&&($('#allp').onclick=()=>{S.plat='All platforms';S.q='';render()});
+ $('#smart')&&($('#smart').onclick=()=>sheet(`<h3>Smart Pick</h3><p class="mu sm">Picked with simple local rules: your platforms, favorite genres, and library status. No AI.</p><div class="panel"><b>${esc(G[11].t)}</b><span class="mu sm">Shooter · PC · not in your library</span></div><div class="seg" style="margin-top:12px"><button class="btn o" id="c">Close</button><button class="btn" id="o">Save it</button></div>`,()=>{$('#c').onclick=close;$('#o').onclick=()=>{close();setStatus(G[11],'saved')}}));
+ $('#nl')&&($('#nl').onclick=()=>sheet(`<h3>New LineUp</h3><label for="ln">Name</label><input type="text" id="ln"><div class="seg" style="margin-top:14px"><button class="btn o" id="c">Cancel</button><button class="btn" id="o">Create</button></div>`,()=>{$('#c').onclick=close;$('#o').onclick=()=>{const v=$('#ln').value.trim();if(v){S.lineups.unshift({n:v,ids:[],starter:false});close();render()}}}));
+ $('#en')&&($('#en').onclick=()=>sheet(`<h3>Your name</h3><input type="text" id="nm" value="${esc(S.name)}" aria-label="Name"><div class="seg" style="margin-top:14px"><button class="btn o" id="c">Cancel</button><button class="btn" id="o">Save</button></div>`,()=>{$('#c').onclick=close;$('#o').onclick=()=>{S.name=$('#nm').value.trim()||S.name;close();render()}}));
+ M.querySelectorAll('[data-p]').forEach(b=>b.onclick=()=>{const i=+b.dataset.p;if(i==4)spin();else if(i==1)sheet(`<h3>Journal</h3>${S.journal.length?S.journal.map(j=>`<div class="panel" style="margin-bottom:8px"><div><b>${esc(j.t)}</b><div class="sm mu">${j.d}${j.r?' · '+'★'.repeat(j.r):''}</div><div class="sm">${esc(j.txt||'')}</div></div></div>`).join(''):'<div class="empty"><p>No entries yet. Add one from a game’s details.</p></div>'}`);else if(i==6)sheet(`<h3>Settings</h3><label>Theme</label><div class="row">${['system','light','dark'].map(t=>`<button class="chip" data-t="${t}">${t[0].toUpperCase()+t.slice(1)}</button>`).join('')}</div><label>Cache</label><div class="row" style="flex-wrap:wrap"><button class="chip">Clear game data</button><button class="chip">Clear images</button><button class="chip">Clear all cache</button></div><p class="note">Clearing cache never removes your library, journal, plans or LineUps. Game data: RAWG. Prices: CheapShark. Rates: Frankfurter.</p>`,s=>s.querySelectorAll('[data-t]').forEach(b=>b.onclick=()=>{const t=b.dataset.t;t=='system'?document.documentElement.removeAttribute('data-theme'):document.documentElement.dataset.theme=t}));else if(i==7)sheet(`<h3>Privacy</h3><p>Game Wallet has no login, backend, or cloud sync. Your library, journal and plans stay on this device. Game and price lookups go directly to RAWG and CheapShark.</p>`);else toast(b.querySelector('b').textContent+' opens here in the full app')})}
+render();
+</script>
+</body>
+</html>

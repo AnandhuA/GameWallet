@@ -6,6 +6,7 @@ import 'models.dart';
 import 'storage.dart';
 
 class GameRepository {
+  bool get hasSupplementalCatalog => false;
   final AppStorage storage;
   final ApiService api;
   GameRepository(this.storage, this.api);
@@ -78,6 +79,7 @@ class GameRepository {
     String? platform,
     int? year,
     String sort = 'popular',
+    bool precise = false,
     int page = 0,
     CancelToken? cancel,
     bool forceRefresh = false,
@@ -121,6 +123,7 @@ class GameRepository {
         'feed': feed,
         'q': query,
         'sort': sort,
+        if (precise) 'precise': true,
         'page': page,
         'genre': ?genre,
         'platform': ?platform,
@@ -163,6 +166,18 @@ class GameRepository {
       throw const ApiFailure('This game could not be loaded.');
     }
   }
+
+  List<Game> deduplicate(Iterable<Game> games) =>
+      {for (final game in games) game.key: game}.values.toList();
+  String canonicalKey(Game game) => game.key;
+  Future<(Game, bool)> detailGame(
+    Game game, {
+    CancelToken? cancel,
+    bool forceRefresh = false,
+  }) => detail(game.id, game.demo, cancel: cancel, forceRefresh: forceRefresh);
+  Future<List<Game>> otherMatches(Game game, {CancelToken? cancel}) async => [];
+  Future<void> confirmMatch(Game game, Game candidate) async =>
+      throw UnsupportedError('No supplementary catalog');
 
   Future<CatalogFilters> filters(bool demo, {bool forceRefresh = false}) async {
     if (demo) {

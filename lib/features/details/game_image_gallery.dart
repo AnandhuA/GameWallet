@@ -1,3 +1,4 @@
+import '../../shared/app_theme.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import '../../shared/cached_catalog_image.dart';
@@ -72,7 +73,7 @@ class _GameImageGalleryState extends State<GameImageGallery> {
             key: ValueKey(images[i]),
             width: 250,
             child: ClipRRect(
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: WalletRadius.row,
               child: Material(
                 child: InkWell(
                   onTap: () => Navigator.push(
@@ -202,7 +203,7 @@ class _ScreenshotViewerState extends State<ScreenshotViewer> {
                     onPressed: current == 0
                         ? null
                         : () => controller.previousPage(
-                            duration: const Duration(milliseconds: 180),
+                            duration: WalletTokens.motion(context),
                             curve: Curves.easeOut,
                           ),
                     icon: const Icon(Icons.chevron_left),
@@ -213,7 +214,7 @@ class _ScreenshotViewerState extends State<ScreenshotViewer> {
                     onPressed: current >= images.length - 1
                         ? null
                         : () => controller.nextPage(
-                            duration: const Duration(milliseconds: 180),
+                            duration: WalletTokens.motion(context),
                             curve: Curves.easeOut,
                           ),
                     icon: const Icon(Icons.chevron_right),

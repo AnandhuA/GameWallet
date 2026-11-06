@@ -215,6 +215,7 @@ class ImageCacheService extends ChangeNotifier {
     for (final url in <String>{
       if (game.cover != null) game.cover!,
       if (game.artwork != null) game.artwork!,
+      ...game.fallbackImages,
     }) {
       unawaited(
         load(url).then<void>((_) {}, onError: (Object e, StackTrace s) {}),

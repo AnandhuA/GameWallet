@@ -1,3 +1,4 @@
+import '../../shared/app_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/game_repository.dart';
@@ -44,38 +45,14 @@ class _DetailsBody extends StatelessWidget {
       if (g.artwork != null) g.artwork!,
       ...g.screenshots,
     }.toList();
-    Widget heading(String title) => Padding(
-      padding: const EdgeInsets.only(top: 28, bottom: 14),
-      child: Text(
-        title,
-        style: Theme.of(
-          context,
-        ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
-      ),
-    );
-    Widget badge(IconData icon, String text) => Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
-      decoration: BoxDecoration(
-        color: colors.surfaceContainerHigh,
-        borderRadius: BorderRadius.circular(7),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 15, color: colors.primary),
-          const SizedBox(width: 5),
-          Flexible(
-            child: Text(text, style: Theme.of(context).textTheme.labelMedium),
-          ),
-        ],
-      ),
-    );
+    Widget heading(String title) => SectionHeader(title);
+    Widget badge(IconData icon, String text) => StatusPill(text, icon: icon);
     return Scaffold(
       body: CustomScrollView(
         slivers: [
           SliverAppBar(
             pinned: true,
-            expandedHeight: 260,
+            expandedHeight: 220,
             actions: [GameActionsMenu(g)],
             flexibleSpace: FlexibleSpaceBar(
               background: Stack(
@@ -102,7 +79,9 @@ class _DetailsBody extends StatelessWidget {
           SliverToBoxAdapter(
             child: Center(
               child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 1100),
+                constraints: BoxConstraints(
+                  maxWidth: WalletTokens.of(context).detailsWidth,
+                ),
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(16, 12, 16, 40),
                   child: Column(
@@ -112,9 +91,9 @@ class _DetailsBody extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           ClipRRect(
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: WalletRadius.control,
                             child: SizedBox(
-                              width: 78,
+                              width: 88,
                               height: 117,
                               child: GameArt(g),
                             ),
@@ -127,7 +106,7 @@ class _DetailsBody extends StatelessWidget {
                                 Text(
                                   g.title,
                                   style: Theme.of(context).textTheme.titleLarge
-                                      ?.copyWith(fontWeight: FontWeight.w800),
+                                      ?.copyWith(fontWeight: FontWeight.w700),
                                 ),
                                 const SizedBox(height: 8),
                                 Text(
@@ -156,7 +135,7 @@ class _DetailsBody extends StatelessWidget {
                                     if (g.rating != null)
                                       badge(
                                         Icons.star,
-                                        '${(g.rating! / 20).toStringAsFixed(1)} ${g.demo ? 'Demo' : g.source.toUpperCase()}',
+                                        '${(g.rating! / 20).toStringAsFixed(1)} ${g.demo ? 'Demo' : (g.provenance['rating'] ?? g.source).toUpperCase()}',
                                       ),
                                     if (saved?.status != null)
                                       badge(
@@ -247,7 +226,7 @@ class _DetailsBody extends StatelessWidget {
                               ),
                               shape: WidgetStatePropertyAll(
                                 RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
+                                  borderRadius: WalletRadius.control,
                                 ),
                               ),
                               side: WidgetStatePropertyAll(
@@ -261,11 +240,8 @@ class _DetailsBody extends StatelessWidget {
                                       )
                                     : BorderSide.none,
                               ),
-                              textStyle: const WidgetStatePropertyAll(
-                                TextStyle(
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w600,
-                                ),
+                              textStyle: WidgetStatePropertyAll(
+                                Theme.of(context).textTheme.labelLarge,
                               ),
                             );
                             final button = Semantics(
@@ -342,8 +318,8 @@ class _DetailsBody extends StatelessWidget {
                               const SizedBox(height: 8),
                               DecoratedBox(
                                 decoration: BoxDecoration(
-                                  color: colors.surfaceContainerLow,
-                                  borderRadius: BorderRadius.circular(14),
+                                  color: Colors.transparent,
+                                  borderRadius: WalletRadius.row,
                                 ),
                                 child: Padding(
                                   padding: const EdgeInsets.all(4),
@@ -406,11 +382,6 @@ class _DetailsBody extends StatelessWidget {
                                         ),
                                       ),
                                       action(
-                                        'LineUp',
-                                        Icons.playlist_add,
-                                        () => addGameToLineUp(context, g),
-                                      ),
-                                      action(
                                         'Favorite',
                                         saved?.favorite == true
                                             ? Icons.favorite
@@ -458,7 +429,12 @@ class _DetailsBody extends StatelessWidget {
                         ),
                       ],
                       if (g.links.isNotEmpty || g.trailers.isNotEmpty) ...[
-                        heading('Official links'),
+                        heading(
+                          g.source == 'freetogame' ||
+                                  g.provenance['links'] == 'freetogame'
+                              ? 'Game links'
+                              : 'Official links',
+                        ),
                         Wrap(
                           spacing: 8,
                           runSpacing: 8,
@@ -517,7 +493,7 @@ class _DetailsBody extends StatelessWidget {
                                     child: DecoratedBox(
                                       decoration: BoxDecoration(
                                         color: colors.surfaceContainerLow,
-                                        borderRadius: BorderRadius.circular(10),
+                                        borderRadius: WalletRadius.control,
                                       ),
                                       child: Padding(
                                         padding: const EdgeInsets.symmetric(
@@ -579,6 +555,84 @@ class _DetailsBody extends StatelessWidget {
                             );
                           },
                         ),
+                      ],
+                      if (!g.demo) ...[
+                        heading('Catalog sources'),
+                        Wrap(
+                          children: [
+                            if (g.source == 'rawg' ||
+                                g.provenance.values.contains('rawg'))
+                              TextButton(
+                                onPressed: () =>
+                                    openExternal(context, 'https://rawg.io/'),
+                                child: const Text('RAWG'),
+                              ),
+                            if (g.source == 'freetogame' ||
+                                g.fallbackImages.isNotEmpty ||
+                                g.provenance.values.contains('freetogame'))
+                              TextButton(
+                                onPressed: () => openExternal(
+                                  context,
+                                  'https://www.freetogame.com/',
+                                ),
+                                child: const Text('FreeToGame'),
+                              ),
+                          ],
+                        ),
+                        if (g.provenance.isNotEmpty)
+                          Text(
+                            'Supplementary fields: ${g.provenance.entries.map((e) => '${const {'summary': 'Description', 'cover': 'Cover', 'fallbackImages': 'Artwork', 'release': 'Release date', 'developers': 'Developers', 'publishers': 'Publishers', 'genres': 'Genres', 'platforms': 'Platforms', 'links': 'Game links', 'screenshots': 'Screenshots', 'rating': 'Rating', 'primary': 'Catalog information'}[e.key] ?? 'Game information'}: ${e.value == 'rawg' ? 'RAWG' : 'FreeToGame'}').join(' · ')}',
+                            style: Theme.of(context).textTheme.bodySmall,
+                          ),
+                      ],
+                      if (p.catalogMatches.isNotEmpty) ...[
+                        heading('Other catalog matches'),
+                        const Text(
+                          'Confirm only if the title and edition refer to the same game. Your saved records will remain unchanged.',
+                        ),
+                        for (final candidate in p.catalogMatches)
+                          ListTile(
+                            title: Text(candidate.title),
+                            subtitle: Text(
+                              [
+                                candidate.source,
+                                if (candidate.release != null)
+                                  '${candidate.release!.year}',
+                                ...candidate.developers,
+                                ...candidate.platforms,
+                              ].join(' · '),
+                            ),
+                            trailing: const Icon(Icons.link),
+                            onTap: () async {
+                              final confirmed = await showDialog<bool>(
+                                context: context,
+                                builder: (context) => AlertDialog(
+                                  title: const Text('Same game and edition?'),
+                                  content: Text(
+                                    'Link ${g.source} and ${candidate.source} listings for ${g.title}? Notes, journals and playthroughs will not be merged or deleted.',
+                                  ),
+                                  actions: [
+                                    TextButton(
+                                      onPressed: () =>
+                                          Navigator.pop(context, false),
+                                      child: const Text('Cancel'),
+                                    ),
+                                    FilledButton(
+                                      onPressed: () =>
+                                          Navigator.pop(context, true),
+                                      child: const Text('Confirm match'),
+                                    ),
+                                  ],
+                                ),
+                              );
+                              if (confirmed == true && context.mounted) {
+                                await guarded(
+                                  context,
+                                  () => p.confirmCatalogMatch(candidate),
+                                );
+                              }
+                            },
+                          ),
                       ],
                       heading('Your playthroughs'),
                       if (journal.isEmpty)

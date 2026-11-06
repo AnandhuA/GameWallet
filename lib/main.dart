@@ -4,6 +4,9 @@ import 'package:provider/provider.dart';
 import 'core/api_service.dart';
 import 'core/image_cache_service.dart';
 import 'core/game_repository.dart';
+import 'core/federated_game_repository.dart';
+import 'core/freetogame_service.dart';
+import 'core/catalog_identity.dart';
 import 'core/storage.dart';
 import 'core/companion_repository.dart';
 import 'features/companion/companion_providers.dart';
@@ -12,11 +15,17 @@ import 'features/home/home_provider.dart';
 import 'features/library/library_provider.dart';
 import 'features/settings/settings_provider.dart';
 import 'shared/app_shell.dart';
+import 'shared/app_theme.dart';
+import 'features/deals/deals_service.dart';
+import 'features/deals/deals_repository.dart';
+import 'features/deals/deals_provider.dart';
+import 'features/deals/deals_catalog_provider.dart';
 import 'features/pricing/pricing_service.dart';
 import 'features/pricing/pricing_repository.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  WalletTheme.registerFontLicenses();
   try {
     final storage = await AppStorage.open();
     await CompanionRepository(storage).prepare();
@@ -45,6 +54,22 @@ class GameAtlas extends StatelessWidget {
   @override
   Widget build(BuildContext context) => MultiProvider(
     providers: [
+      ChangeNotifierProvider(create: (_) => CatalogIdentity(storage)),
+      Provider(
+        create: (_) => FreeToGameRepository(storage, FreeToGameService()),
+        dispose: (_, repository) => repository.dispose(),
+      ),
+      Provider(
+        create: (_) => DealsService(),
+        dispose: (_, service) => service.dispose(),
+      ),
+      Provider(
+        create: (context) =>
+            DealsRepository(storage, context.read<DealsService>()),
+      ),
+      ChangeNotifierProvider(
+        create: (context) => DealsProvider(context.read<DealsRepository>()),
+      ),
       Provider(
         create: (_) => PricingService(),
         dispose: (_, service) => service.dispose(),
@@ -56,8 +81,10 @@ class GameAtlas extends StatelessWidget {
       ChangeNotifierProvider(create: (_) => ImageCacheService(storage.images)),
       Provider(create: (_) => CompanionRepository(storage)),
       ChangeNotifierProvider(
-        create: (context) =>
-            JournalProvider(context.read<CompanionRepository>()),
+        create: (context) => JournalProvider(
+          context.read<CompanionRepository>(),
+          identities: context.read<CatalogIdentity>(),
+        ),
       ),
       ChangeNotifierProvider(
         create: (context) =>
@@ -68,12 +95,14 @@ class GameAtlas extends StatelessWidget {
             CalendarProvider(context.read<CompanionRepository>()),
       ),
       ChangeNotifierProvider(
-        create: (context) =>
-            DiscoveryPreferencesProvider(context.read<CompanionRepository>()),
+        create: (context) => DiscoveryPreferencesProvider(
+          context.read<CompanionRepository>(),
+          identities: context.read<CatalogIdentity>(),
+        ),
       ),
       ChangeNotifierProvider(create: (_) => WheelProvider()),
-      Provider(
-        create: (_) => GameRepository(
+      Provider<GameRepository>(
+        create: (context) => FederatedGameRepository(
           storage,
           ApiService(
             apiKey: () =>
@@ -85,7 +114,13 @@ class GameAtlas extends StatelessWidget {
                     )
                     as String,
           ),
+          context.read<FreeToGameRepository>(),
+          context.read<CatalogIdentity>(),
         ),
+      ),
+      ChangeNotifierProvider(
+        create: (context) =>
+            DealsCatalogProvider(context.read<GameRepository>()),
       ),
       ChangeNotifierProvider(
         create: (context) =>
@@ -96,6 +131,7 @@ class GameAtlas extends StatelessWidget {
           storage,
           imageCache: context.read<ImageCacheService>(),
           observeClock: true,
+          identities: context.read<CatalogIdentity>(),
         ),
       ),
       ChangeNotifierProvider(
@@ -111,55 +147,11 @@ class GameAtlas extends StatelessWidget {
 
 class AtlasApp extends StatelessWidget {
   const AtlasApp({super.key});
-  ThemeData theme(Brightness brightness, Color accentColor) {
-    final dark = brightness == Brightness.dark;
-    final scheme = ColorScheme.fromSeed(
-      seedColor: accentColor,
-      brightness: brightness,
-      surface: dark ? const Color(0xFF080B0D) : const Color(0xFFF5F8F9),
-      primary: dark ? accentColor : null,
-      secondaryContainer: Color.lerp(
-        dark ? const Color(0xFF151A20) : Colors.white,
-        accentColor,
-        dark ? .3 : .2,
-      ),
-      onSecondaryContainer: dark ? Colors.white : Colors.black87,
-    );
-    return ThemeData(
-      useMaterial3: true,
-      colorScheme: scheme,
-      scaffoldBackgroundColor: scheme.surface,
-      cardTheme: CardThemeData(
-        elevation: 0,
-        color: dark ? const Color(0xFF171D1F) : Colors.white,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      ),
-      inputDecorationTheme: InputDecorationTheme(
-        filled: true,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide.none,
-        ),
-      ),
-      appBarTheme: AppBarTheme(
-        backgroundColor: scheme.surface,
-        scrolledUnderElevation: 0,
-      ),
-      navigationBarTheme: NavigationBarThemeData(
-        backgroundColor: scheme.surface,
-        indicatorColor: scheme.secondaryContainer,
-        elevation: 0,
-        height: 76,
-      ),
-      navigationRailTheme: NavigationRailThemeData(
-        backgroundColor: scheme.surface,
-        indicatorColor: scheme.secondaryContainer,
-      ),
-      dividerTheme: DividerThemeData(
-        color: scheme.outlineVariant.withValues(alpha: .4),
-      ),
-    );
-  }
+  ThemeData theme(
+    Brightness brightness,
+    Color accentColor, {
+    bool amoled = false,
+  }) => WalletTheme.build(brightness, accentColor, amoled: amoled);
 
   @override
   Widget build(BuildContext context) => MaterialApp(
@@ -172,6 +164,7 @@ class AtlasApp extends StatelessWidget {
     darkTheme: theme(
       Brightness.dark,
       context.watch<SettingsProvider>().accentColor,
+      amoled: context.select<SettingsProvider, bool>((p) => p.amoled),
     ),
     themeMode: context.select<SettingsProvider, ThemeMode>((p) => p.theme),
     home: const AppShell(),

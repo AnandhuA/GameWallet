@@ -1,3 +1,4 @@
+import '../../shared/app_theme.dart';
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -80,9 +81,6 @@ class _PickPageState extends State<PickPage>
           .map((e) => e.game);
     } else if (source == 'favorites') {
       pool = library.entries(demo).where((e) => e.favorite).map((e) => e.game);
-    } else if (source.startsWith('lineup:')) {
-      pool =
-          context.read<LineUpProvider>().byId(source.substring(7))?.games ?? [];
     }
     context.read<WheelProvider>().replace(filtered(pool));
   }
@@ -122,7 +120,6 @@ class _PickPageState extends State<PickPage>
     final wheel = context.watch<WheelProvider>();
     final home = context.watch<HomeProvider>();
     final demo = context.watch<SettingsProvider>().demo;
-    final lists = context.watch<LineUpProvider>().entries(demo);
     context.watch<DiscoveryPreferencesProvider>();
     if (seededDemo != demo) {
       seededDemo = demo;
@@ -148,7 +145,6 @@ class _PickPageState extends State<PickPage>
       'discovery': 'Discovery',
       'want': 'Want to Play',
       'favorites': 'Favorites',
-      for (final l in lists) 'lineup:${l.id}': l.title,
     };
     return ListView(
       padding: const EdgeInsets.all(16),
@@ -321,7 +317,7 @@ class WheelPainter extends CustomPainter {
           Paint()
             ..color = Color.lerp(
               accent,
-              const Color(0xFF17272F),
+              const WalletTokens().artworkBase,
               (i % 3) * .3,
             )!,
         );
